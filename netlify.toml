@@ -1,0 +1,11 @@
+# Netlify Deployment Configuration for Kyoto Autumn Trip Web App
+
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+    [headers.values]
+      Access-Control-Allow-Origin = "*"
+      X-Frame-Options = "DENY"
+      X-Content-Type-Options = "nosniff"

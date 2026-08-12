@@ -1,0 +1,22 @@
+{
+  "name": "一起在日本追楓的日子 - Kansai Vibes '26",
+  "short_name": "KansaiVibes26",
+  "description": "專為 Otis & Irene 設計的 2026 京都賞楓隨身旅遊 App",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#9E2A2B",
+  "theme_color": "#9E2A2B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

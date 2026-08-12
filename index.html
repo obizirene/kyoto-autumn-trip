@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>一起在日本追楓的日子 - Kansai Vibes '26</title>
+  <meta name="description" content="專為手機設計的京都賞楓旅遊助手，包含航班資訊、自然語言智慧記帳、分日行程分類、行李檢查清單與帶照片的購物願望清單。" />
+  <meta name="theme-color" content="#9E2A2B" />
+
+  <!-- PWA & Mobile Web App Settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="KansaiVibes26" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icon.jpg" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <!-- Firebase Compat JS SDKs (Supports Realtime Database & Firestore) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebaseConfig.js"></script>
+</head>
+<body>
+
+  <!-- Mobile App Frame Container -->
+  <div class="app-container">
+
+    <!-- Top Kyoto Header -->
+    <header class="header-kyoto">
+      <div class="header-top">
+        <div class="trip-badge">🍁 Kansai Vibes '26</div>
+        <div class="header-actions">
+          <button id="firebase-sync-btn" class="icon-btn-ghost" title="🔥 Firebase 雲端即時同步設定">🔥</button>
+          <button id="export-data-modal-btn" class="icon-btn-ghost" title="📤 匯出 CSV / JSON">📤</button>
+          <button id="import-data-modal-btn" class="icon-btn-ghost" title="📥 匯入 CSV / JSON">📥</button>
+        </div>
+      </div>
+      <div class="header-title-group">
+        <h1>一起在日本追楓的日子</h1>
+        <div class="header-subtitle">
+          <span>📅 2026/11/20 ~ 11/29</span>
+          <span>Otis & Irene</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Views Content Wrapper -->
+    <main class="main-content">
+
+      <!-- ==================== TAB 1: FLIGHT & STAY INFO ==================== -->
+      <section id="tab-flight" class="tab-section active">
+        <!-- Outbound Flight Card Container -->
+        <div id="outbound-flight-container"></div>
+
+        <!-- Inbound Flight Card Container -->
+        <div id="inbound-flight-container"></div>
+
+        <!-- Hotels / Accommodation Section -->
+        <div class="flex-between" style="margin:20px 0 10px 0;">
+          <div style="font-weight:800; font-size:1.05rem; color:var(--maple-crimson);">🏨 住宿資訊</div>
+          <button id="add-hotel-btn" class="btn-secondary" style="padding:4px 12px; font-size:0.78rem;">+ 新增住宿</button>
+        </div>
+        <div id="hotel-list-container"></div>
+      </section>
+
+      <!-- ==================== TAB 2: SMART EXPENSE TRACKER ==================== -->
+      <section id="tab-expense" class="tab-section">
+        <div id="google-sheet-expense-control-container" style="margin-bottom:14px;"></div>
+        <!-- Natural Language Quick Expense Input Box -->
+        <div class="nlp-banner-card">
+          <div style="font-size:0.95rem; font-weight:800; color:var(--maple-crimson); display:flex; align-items:center; gap:6px;">
+            🗣️ 智慧語音/文字自動記帳
+          </div>
+          <div style="font-size:0.76rem; color:var(--kyoto-muted); margin-top:2px;">
+            例：「清水寺御守 2000日圓 刷熊本熊 ❤️」或「嵐山湯豆腐 6500日幣 現金 🐷」
+          </div>
+          <div class="nlp-input-wrapper">
+            <input type="text" id="nlp-expense-input" class="nlp-input-field" placeholder="輸入或貼上一段消費紀錄..." />
+            <button id="nlp-submit-btn" class="nlp-submit-btn" title="智慧解析">⚡</button>
+          </div>
+          <!-- Quick Tag Chips Samples -->
+          <div class="nlp-tags-help">
+            <span class="nlp-tag-sample">清水寺御守 2000日圓 刷熊本熊 ❤️</span>
+            <span class="nlp-tag-sample">嵐山湯豆腐 6500日幣 現金 🐷</span>
+            <span class="nlp-tag-sample">% ARABICA咖啡 1500JPY 刷吉鶴 ❤️</span>
+            <span class="nlp-tag-sample">藥妝購物 15000日幣 刷cube 🐷</span>
+          </div>
+          <!-- Real-time Confirmation Preview Toast -->
+          <div id="nlp-parsed-preview"></div>
+        </div>
+
+        <!-- Expense Dashboard Overview Card -->
+        <div class="kyoto-card">
+          <div class="card-title-row">
+            <div class="card-title">💰 支出統計概覽</div>
+            <button id="add-expense-modal-btn" onclick="window.openAddExpenseModal()" class="btn-secondary" style="padding:6px 12px; font-size:0.78rem;">+ 手動新增</button>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+            <div class="parsed-item" style="background:#FFF5F5;">
+              <span class="parsed-label">總支出 (日圓 JPY)</span>
+              <div id="exp-total-jpy" style="font-size:1.2rem; font-weight:800; color:var(--maple-crimson);">¥ 0</div>
+            </div>
+            <div class="parsed-item" style="background:#FFF9EF;">
+              <span class="parsed-label">折合台幣 (TWD)</span>
+              <div id="exp-total-twd" style="font-size:1.2rem; font-weight:800; color:var(--amber-gold);">NT$ 0</div>
+            </div>
+          </div>
+          <div class="parsed-grid">
+            <div class="parsed-item"><span class="parsed-label">❤️ 小計</span><div id="exp-me-total" class="parsed-val">NT$ 0</div></div>
+            <div class="parsed-item"><span class="parsed-label">🐷 小計</span><div id="exp-husband-total" class="parsed-val">NT$ 0</div></div>
+          </div>
+        </div>
+
+        <!-- Expense History List -->
+        <div style="font-weight:700; font-size:0.95rem; margin-bottom:10px; color:var(--kyoto-dark);">📝 消費歷史明細</div>
+        <div id="expense-list-container"></div>
+      </section>
+
+      <!-- ==================== TAB 3: DAY-BY-DAY ITINERARY ==================== -->
+      <section id="tab-itinerary" class="tab-section">
+        <!-- Google Sheet Itinerary Dynamic Control Bar -->
+        <div id="google-sheet-itinerary-control-container" style="margin-bottom:14px;"></div>
+        <!-- Day Selector Slider -->
+        <div id="day-selector-container" class="day-selector-scroll"></div>
+
+        <!-- Category Filter Chips -->
+        <div id="itinerary-category-chips" class="filter-chips-scroll"></div>
+
+        <!-- Timeline Container -->
+        <div id="itinerary-timeline-container" style="padding-top:10px;"></div>
+
+        <!-- Floating Add Itinerary Button -->
+        <button id="add-itinerary-modal-btn" class="btn-floating-add" title="新增行程">+</button>
+      </section>
+
+      <!-- ==================== TAB 4: PACKING CHECKLIST ==================== -->
+      <section id="tab-packing" class="tab-section">
+        <!-- Overall Progress Card -->
+        <div class="kyoto-card" style="margin-bottom:16px;">
+          <div class="flex-between">
+            <div class="card-title">🎒 行李準備進度</div>
+            <span id="packing-progress-text" style="font-size:0.8rem; font-weight:700; color:var(--maple-crimson);">0 / 0 已打包 (0%)</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="packing-progress-fill" class="progress-bar-fill" style="width:0%;"></div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button id="add-packing-item-btn" class="btn-secondary" style="flex:1; padding:6px; font-size:0.78rem;">+ 新增行李項目</button>
+            <button id="add-packing-cat-btn" class="btn-secondary" style="flex:1; padding:6px; font-size:0.78rem;">+ 新增分類</button>
+          </div>
+        </div>
+
+        <!-- Categorized Checklist Accordion -->
+        <div id="packing-checklist-container"></div>
+      </section>
+
+      <!-- ==================== TAB 5: SHOPPING WISHLIST ==================== -->
+      <section id="tab-shopping" class="tab-section">
+        <div class="flex-between" style="margin-bottom:10px;">
+          <div style="font-weight:800; font-size:1.05rem; color:var(--maple-crimson);">🛍️ 購物清單</div>
+          <span style="font-size:0.75rem; color:var(--kyoto-muted);">點擊卡片可檢視及新增商品</span>
+        </div>
+
+        <!-- Location Category Filter Chips Bar -->
+        <div id="shopping-location-chips" class="filter-chips-scroll" style="margin-bottom:14px;"></div>
+
+        <!-- Shopping Card Grid (Location Cards showing 1st image) -->
+        <div id="shopping-grid-container" class="shopping-grid"></div>
+
+        <!-- Floating Add Shopping Button -->
+        <button id="add-shopping-modal-btn" onclick="window.openAddShoppingModal()" class="btn-floating-add" title="新增購物地點">+</button>
+      </section>
+
+    </main>
+
+    <!-- ==================== FLOATING BOTTOM NAVIGATION BAR ==================== -->
+    <div class="bottom-nav-container">
+      <nav class="bottom-nav">
+        <button class="nav-item active" data-tab="flight">
+          <span class="nav-icon">✈️</span>
+          <span>航班住宿</span>
+        </button>
+        <button class="nav-item" data-tab="expense">
+          <span class="nav-icon">💰</span>
+          <span>智慧記帳</span>
+        </button>
+        <button class="nav-item" data-tab="itinerary">
+          <span class="nav-icon">🗓️</span>
+          <span>分日行程</span>
+        </button>
+        <button class="nav-item" data-tab="packing">
+          <span class="nav-icon">🎒</span>
+          <span>行李清單</span>
+        </button>
+        <button class="nav-item" data-tab="shopping">
+          <span class="nav-icon">🛍️</span>
+          <span>購物清單</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ==================== MODAL: EXPORT DATA (CSV & JSON) ==================== -->
+    <div id="modal-export-data" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-title">📤 匯出資料 (CSV / Excel / JSON)</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <div style="font-size:0.8rem; color:var(--kyoto-muted); margin-bottom:14px; line-height:1.4;">
+          可下載可在 <b>Excel / Google Sheets</b> 開啟的 CSV 報表，或 JSON 備份檔：
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-export-expenses-csv" class="btn-primary" style="background:#10B981;">
+            📊 匯出「記帳明細」CSV (Excel / Google Sheet 格式)
+          </button>
+          <button id="btn-export-itinerary-csv" class="btn-primary" style="background:#10B981;">
+            📊 匯出「分日行程」CSV (Excel / Google Sheet 格式)
+          </button>
+          <button id="btn-export-expenses-json" class="btn-secondary">
+            💰 匯出「記帳明細」 (JSON)
+          </button>
+          <button id="btn-export-itinerary-json" class="btn-secondary">
+            🗓️ 匯出「分日行程」 (JSON)
+          </button>
+          <button id="btn-export-combined-json" class="btn-primary" style="background:var(--maple-crimson);">
+            📦 匯出「記帳 + 行程」組合備份 (JSON)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: IMPORT DATA (CSV & JSON) ==================== -->
+    <div id="modal-import-data" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-title">📥 匯入資料 (CSV / JSON)</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-import-data">
+          <div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.4;">
+            選取 <b>.csv 表格檔</b> (Excel/Google Sheet) 或 <b>.json 備份檔</b>，或直接貼上文字內容解析寫入！
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">選取 CSV / JSON 檔案</label>
+            <input type="file" id="import-file-input" class="form-control" accept=".csv,.json,text/csv,application/json" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">或 直接貼上 CSV / JSON 文字</label>
+            <textarea id="import-text-input" class="form-control" rows="4" placeholder="貼上 CSV 表格文字或 JSON 內容..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">匯入目標與方式</label>
+            <select id="import-type-select" class="form-control">
+              <option value="auto">⚡ 自動辨識 (CSV 或 JSON)</option>
+              <option value="expense">💰 指定匯入至「記帳明細」</option>
+              <option value="itinerary">🗓️ 指定匯入至「分日行程」</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">寫入模式</label>
+            <select id="import-mode" class="form-control">
+              <option value="merge">➕ 合併模式 (保留現有資料，自動增補)</option>
+              <option value="replace">🔄 覆蓋模式 (全面替換舊資料)</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary" style="margin-top:10px;">開始解析並匯入</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: FIREBASE FIRESTORE SYNC CONFIG ==================== -->
+    <div id="modal-firebase-config" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-title">🔥 Firebase 雲端資料庫設定</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-firebase-config">
+          <div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.4;">
+            設定 Firebase Realtime Database / Firestore 免費資料庫，讓您與老公 (❤️ & 🐷) 在兩台手機上能夠即時同步更新行程與記帳！
+          </div>
+          <div class="form-group">
+            <label class="form-label">Firebase Database URL / Project ID</label>
+            <input type="text" id="fb-project-id" class="form-control" placeholder="https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app" value="https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app" />
+          </div>
+          <div id="fb-status-message" style="font-size:0.78rem; font-weight:700; margin-bottom:8px;"></div>
+          <button type="submit" class="btn-primary">儲存並連結雲端資料庫</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: EDIT FLIGHT DETAILS ==================== -->
+    <div id="modal-edit-flight" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-flight-title" class="modal-title">✈️ 編輯航班資訊</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-edit-flight">
+          <input type="hidden" id="flight-type" value="outbound" />
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">航空公司</label>
+              <input type="text" id="fl-airline" class="form-control" placeholder="例：星宇航空" required />
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">航班編號</label>
+              <input type="text" id="fl-code" class="form-control" placeholder="例：JX820" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">日期</label>
+            <input type="date" id="fl-date" class="form-control" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">出發機場與代碼</label>
+              <input type="text" id="fl-dep-airport" class="form-control" placeholder="例：台北桃園 (TPE)" required />
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">出發時間</label>
+              <input type="text" id="fl-dep-time" class="form-control" placeholder="例：07:40 AM" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">抵達機場與代碼</label>
+              <input type="text" id="fl-arr-airport" class="form-control" placeholder="例：關西國際機場 (KIX)" required />
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">抵達時間</label>
+              <input type="text" id="fl-arr-time" class="form-control" placeholder="例：11:10 AM" required />
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存航班資訊</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 1: ADD / EDIT EXPENSE ==================== -->
+    <div id="modal-expense" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-expense-title" class="modal-title">💰 新增記帳項目</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-add-expense" onsubmit="window.submitAddExpenseForm(event); return false;">
+          <input type="hidden" id="exp-id" value="" />
+          <div class="form-group">
+            <label class="form-label">項目名稱 / 地點</label>
+            <input type="text" id="exp-title" class="form-control" placeholder="例：清水寺門票" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">金額</label>
+              <input type="number" id="exp-amount" class="form-control" placeholder="1000" required />
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">幣別</label>
+              <select id="exp-currency" class="form-control">
+                <option value="JPY">日圓 (JPY)</option>
+                <option value="TWD">台幣 (TWD)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">消費類別</label>
+              <select id="exp-category" class="form-control">
+                <!-- Dropdown items dynamically injected -->
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">付款人</label>
+              <select id="exp-payer" class="form-control">
+                <option value="❤️">❤️ 我</option>
+                <option value="🐷">🐷 老公</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">信用卡 / 支付方式</label>
+            <select id="exp-card" class="form-control">
+              <!-- Dropdown items dynamically injected -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">備註</label>
+            <input type="text" id="exp-note" class="form-control" placeholder="選填備註..." />
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存記帳</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 2: ADD / EDIT HOTEL ==================== -->
+    <div id="modal-hotel" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-hotel-title" class="modal-title">🏨 新增/編輯住宿</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-hotel">
+          <input type="hidden" id="hotel-id" value="" />
+          <div class="form-group">
+            <label class="form-label">飯店名稱</label>
+            <input type="text" id="hotel-name" class="form-control" placeholder="例：京都三井花園飯店" required />
+          </div>
+
+          <!-- Interactive Date Range Picker Trigger & Embedded Calendar -->
+          <div class="form-group">
+            <label class="form-label">📅 入住與退房日期 (點擊日曆區選取起訖)</label>
+            <button type="button" id="hotel-date-range-trigger" class="form-control" style="text-align:left; display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; cursor:pointer;">
+              <span style="font-size:0.9rem; font-weight:700; color:var(--maple-crimson);" id="display-date-range-label">2026-11-20 ➔ 2026-11-29</span>
+              <span id="display-nights-badge" class="badge badge-spot">9 晚</span>
+            </button>
+            <input type="hidden" id="hotel-checkin" value="2026-11-20" />
+            <input type="hidden" id="hotel-checkout" value="2026-11-29" />
+          </div>
+
+          <!-- Embedded Visual Calendar Container -->
+          <div id="hotel-calendar-box" class="calendar-box" style="display:block; margin-bottom:14px;">
+            <div class="calendar-header">
+              <button type="button" class="calendar-nav-btn" id="cal-prev-month">❮</button>
+              <span id="cal-month-title">2026 年 11 月</span>
+              <button type="button" class="calendar-nav-btn" id="cal-next-month">❯</button>
+            </div>
+            <div class="calendar-weekdays">
+              <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+            </div>
+            <div id="cal-days-grid" class="calendar-days-grid"></div>
+            <div style="font-size:0.75rem; color:var(--kyoto-muted); text-align:center; margin-top:8px;">
+              💡 請在上方日曆點選「入住日期」與「退房日期」
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Google 地圖連結 (選填，有貼帶入，沒貼自動產生)</label>
+            <input type="text" id="hotel-maps" class="form-control" placeholder="https://maps.google.com/..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">交通 / 備忘貼士</label>
+            <input type="text" id="hotel-notes" class="form-control" placeholder="例：地鐵烏丸御池站 6 號出口" />
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存住宿資訊</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 3: ADD / EDIT ITINERARY ==================== -->
+    <div id="modal-itinerary" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-itinerary-title" class="modal-title">🗓️ 新增/編輯行程景點</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-add-itinerary">
+          <input type="hidden" id="it-id" value="" />
+          <div class="form-group">
+            <label class="form-label">第幾天 (Day)</label>
+            <select id="it-day" class="form-control">
+              <option value="1">Day 1 (11/20)</option>
+              <option value="2">Day 2 (11/21)</option>
+              <option value="3">Day 3 (11/22)</option>
+              <option value="4">Day 4 (11/23)</option>
+              <option value="5">Day 5 (11/24)</option>
+              <option value="6">Day 6 (11/25)</option>
+              <option value="7">Day 7 (11/26)</option>
+              <option value="8">Day 8 (11/27)</option>
+              <option value="9">Day 9 (11/28)</option>
+              <option value="10">Day 10 (11/29)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">⏰ 行程時間區間 (10 分鐘單位)</label>
+            <div class="form-row" style="align-items:center;">
+              <select id="it-time-start" class="form-control" style="flex:1;"></select>
+              <span style="font-size:0.9rem; font-weight:800; color:var(--amber-gold); padding:0 6px;">➔</span>
+              <select id="it-time-end" class="form-control" style="flex:1;"></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">行程標題</label>
+            <input type="text" id="it-title" class="form-control" placeholder="例：嵐山竹林小徑" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">分類</label>
+              <select id="it-category" class="form-control">
+                <!-- Injected from ITINERARY_CATEGORIES -->
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">預估費用 (JPY)</label>
+              <input type="number" id="it-cost" class="form-control" placeholder="1000" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">地點名稱</label>
+            <input type="text" id="it-location" class="form-control" placeholder="例：天龍寺" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Google Maps 網址 (選填，有貼直接帶入，沒貼自動搜尋)</label>
+            <input type="text" id="it-maps-url" class="form-control" placeholder="貼上 Google Maps 網址 (https://maps.app.goo.gl/...)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">備忘貼士</label>
+            <input type="text" id="it-note" class="form-control" placeholder="例：建議早起避開人潮" />
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存行程</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 4: ADD PACKING ITEM ==================== -->
+    <div id="modal-packing-item" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-packing-item-title" class="modal-title">🎒 新增行李項目</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-add-packing-item">
+          <input type="hidden" id="edit-packing-item-id" value="" />
+          <div class="form-group">
+            <label class="form-label">選擇行李分類</label>
+            <select id="pk-item-category-select" class="form-control">
+              <!-- Dynamically filled -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">項目名稱</label>
+            <input type="text" id="pk-item-name" class="form-control" placeholder="例：賞楓必備野餐墊" required />
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存行李項目</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 5: ADD / EDIT PACKING CATEGORY ==================== -->
+    <div id="modal-packing-cat" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-packing-cat-title" class="modal-title">📁 新增行李分類</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-add-packing-cat">
+          <input type="hidden" id="edit-packing-cat-old-name" value="" />
+          <div class="form-group">
+            <label class="form-label">分類名稱與 Emoji</label>
+            <input type="text" id="pk-cat-name" class="form-control" placeholder="例：📷 攝影裝備" required />
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存分類</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 6: CREATE / EDIT LOCATION WISHLIST ==================== -->
+    <div id="modal-shopping" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-shopping-title" class="modal-title">🛍️ 新增購物地點</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-add-shopping" onsubmit="window.saveShoppingLocationForm(event); return false;">
+          <input type="hidden" id="edit-shop-loc-id" value="" />
+          <div class="form-group">
+            <label class="form-label">購買地點名稱 (例：祇園本店 / 松本清藥妝)</label>
+            <input type="text" id="shop-location" class="form-control" placeholder="例：祇園本店" required />
+          </div>
+          <div id="first-item-fields">
+            <div class="form-row">
+              <div class="form-group" style="flex:1;">
+                <label class="form-label">首項商品名稱</label>
+                <input type="text" id="shop-name" class="form-control" placeholder="例：Yojiya 護手霜" />
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label class="form-label">預估價格 (JPY)</label>
+                <input type="number" id="shop-price" class="form-control" placeholder="2000" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">商品照片 (選擇圖片或手機拍照)</label>
+              <input type="file" id="shop-img-file" class="form-control" accept="image/*" />
+              <img id="shop-img-preview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:12px; margin-top:8px; display:none;" alt="Preview" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">商品分類</label>
+              <select id="shop-category" class="form-control">
+                <option value="購物">🛍️ 購物</option>
+                <option value="送禮">🎁 送禮</option>
+                <option value="飲食">🍱 飲食</option>
+                <option value="其他">📦 其他</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">🔗 綁定已新增行程景點 (選填)</label>
+              <select id="shop-itinerary-id" class="form-control">
+                <option value="">-- 不綁定行程 --</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">地點與備忘說明</label>
+            <input type="text" id="shop-note" class="form-control" placeholder="例：四條通近八坂神社" />
+          </div>
+          <button type="button" onclick="window.saveShoppingLocationForm(event)" class="btn-primary" style="margin-top:10px;">儲存地點</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 7: SHOPPING LOCATION DETAIL SHEET ==================== -->
+    <div id="modal-shopping-detail" class="modal-overlay">
+      <div class="modal-sheet" style="max-height:90vh;">
+        <div class="modal-header">
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div id="detail-location-name" class="modal-title" style="font-size:1.2rem;">📍 地點名稱</div>
+              <button id="detail-header-edit-btn" type="button" onclick="window.editCurrentLocationDetail()" class="btn-secondary" style="padding:3px 10px; font-size:0.75rem; border-radius:6px; cursor:pointer;" title="編輯此地點名稱與綁定">編輯地點</button>
+            </div>
+            <div id="detail-location-note" style="font-size:0.78rem; color:var(--kyoto-muted);">地點說明</div>
+          </div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+
+        <!-- Items Container inside Location -->
+        <div id="detail-items-container" style="margin-bottom:16px;"></div>
+
+        <!-- Button to add more items to THIS location -->
+        <button id="add-item-to-this-loc-btn" onclick="window.openAddSubitemModal()" class="btn-primary" style="background:var(--kyoto-dark); cursor:pointer;">
+          + 新增商品至此地點
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 8: ADD ITEM TO EXISTING LOCATION ==================== -->
+    <div id="modal-add-item-to-loc" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div id="modal-add-item-title" class="modal-title">🛍️ 新增商品</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-add-item-to-loc" onsubmit="window.saveSubitemForm(event); return false;">
+          <input type="hidden" id="subitem-loc-id" value="" />
+          <div class="form-group">
+            <label class="form-label">商品名稱</label>
+            <input type="text" id="subitem-name" class="form-control" placeholder="例：吸油面紙" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">預估價格 (JPY)</label>
+            <input type="number" id="subitem-price" class="form-control" placeholder="1200" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">商品照片 (選擇圖片或拍照)</label>
+            <input type="file" id="subitem-img-file" class="form-control" accept="image/*" />
+            <img id="subitem-img-preview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:12px; margin-top:8px; display:none;" alt="Preview" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">備忘貼士</label>
+            <input type="text" id="subitem-note" class="form-control" placeholder="例：限定香味" />
+          </div>
+          <button type="button" onclick="window.saveSubitemForm(event)" class="btn-primary" style="margin-top:10px;">加入此地點商品</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 9: EDIT EXISTING SUBITEM ==================== -->
+    <div id="modal-edit-subitem" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-title">✏️ 編輯商品資訊</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-edit-subitem">
+          <input type="hidden" id="edit-subitem-loc-id" value="" />
+          <input type="hidden" id="edit-subitem-id" value="" />
+          <div class="form-group">
+            <label class="form-label">商品名稱</label>
+            <input type="text" id="edit-subitem-name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">預估價格 (JPY)</label>
+            <input type="number" id="edit-subitem-price" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">替換商品照片 (選填，不選保留原圖)</label>
+            <input type="file" id="edit-subitem-img-file" class="form-control" accept="image/*" />
+            <img id="edit-subitem-img-preview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:12px; margin-top:8px;" alt="Preview" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">備忘貼士</label>
+            <input type="text" id="edit-subitem-note" class="form-control" />
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存變更</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 12: GOOGLE SHEET EXPENSE SYNC ==================== -->
+    <div id="modal-google-sheet-expense" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-title">📊 讀取 Google Sheet 試算表記帳</div>
+          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+        </div>
+        <form id="form-google-sheet-expense" onsubmit="window.syncGoogleSheetExpense(event); return false;">
+          <div style="font-size:0.8rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.5; background:var(--washi-bg); padding:10px 12px; border-radius:10px;">
+            <b>💡 使用說明：</b><br/>
+            1. 在 Google 試算表中點選 <b>「檔案 ➔ 分享 ➔ 發布到 Web」</b><br/>
+            2. 選擇欲發布的記帳頁籤（例：`記帳`），格式選擇 <b>「逗號分隔值 (.csv)」</b> ➔ 點選發布<br/>
+            3. 將複製到的 <b>CSV 連結網址</b> 貼在下方即可一鍵自動讀取！
+          </div>
+          <div class="form-group">
+            <label class="form-label">Google Sheet 發布的 CSV 網址</label>
+            <input type="url" id="gs-expense-csv-url" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" required />
+          </div>
+          <button type="button" onclick="window.syncGoogleSheetExpense(event)" class="btn-primary" style="margin-top:10px; background:#10B981;">⚡ 讀取並同步記帳資料</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 13: GOOGLE SHEET ITINERARY SYNC ==================== -->
+    <div id="modal-google-sheet-itinerary" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-title">📋 貼上 Google 試算表行程</div>
+          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-google-sheet-itinerary')" style="color:#000;">✕</button>
+        </div>
+        <form id="form-google-sheet-itinerary" onsubmit="window.syncGoogleSheetItinerary(event); return false;">
+          <div style="font-size:0.82rem; color:var(--kyoto-dark); margin-bottom:12px; line-height:1.6; background:var(--washi-bg); padding:12px; border-radius:12px; border:1px solid rgba(16, 185, 129, 0.3);">
+            <b style="color:#047857;">💡 貼上步驟（超簡單 3 步驟）：</b><br/>
+            1. 在 Google 試算表中選取您要同步的表格列（<b>含第 1 列標題</b>）<br/>
+            2. 按鍵盤 <b>Ctrl + C</b> 複製<br/>
+            3. 貼在下方方塊中，點選下方綠色按鈕即可一秒匯入！
+          </div>
+          <div class="form-group">
+            <label class="form-label">請在此貼上複製的表格內容 (Ctrl + V)</label>
+            <textarea id="gs-itinerary-csv-text" class="form-control" rows="5" placeholder="在 Google 試算表中選取表格並按 Ctrl+C，然後貼在此處 (Ctrl+V)..." required></textarea>
+          </div>
+          <button type="button" onclick="window.syncGoogleSheetItinerary(event)" class="btn-primary" style="margin-top:10px; background:#10B981; font-weight:800; font-size:0.95rem; padding:12px;">⚡ 一鍵匯入全 10 天行程</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 10: FULLSCREEN IMAGE LIGHTBOX ==================== -->
+    <div id="modal-image-lightbox" class="lightbox-overlay">
+      <button class="icon-btn-ghost close-lightbox" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.2); font-size:1.2rem; border:none; color:#FFF; cursor:pointer;">✕</button>
+      <div class="lightbox-img-wrapper">
+        <img id="lightbox-img-element" class="lightbox-img" src="" alt="Enlarged Photo" />
+      </div>
+      <div id="lightbox-caption-text" class="lightbox-caption"></div>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Dependencies -->
+  <script src="js/data.js"></script>
+  <script src="js/nlpParser.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
+
+
