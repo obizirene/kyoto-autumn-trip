@@ -103,20 +103,34 @@
             <div class="card-title">💰 支出統計概覽</div>
             <button id="add-expense-modal-btn" onclick="window.openAddExpenseModal()" class="btn-secondary" style="padding:6px 12px; font-size:0.78rem;">+ 手動新增</button>
           </div>
-          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+          <!-- Row 1: JPY / TWD pure totals / combined -->
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:10px;">
             <div class="parsed-item" style="background:#FFF5F5;">
-              <span class="parsed-label">總支出 (日圓 JPY)</span>
-              <div id="exp-total-jpy" style="font-size:1.2rem; font-weight:800; color:var(--maple-crimson);">¥ 0</div>
+              <span class="parsed-label" style="font-size:0.68rem;">純日圓支出 ¥</span>
+              <div id="exp-total-jpy" style="font-size:1.05rem; font-weight:800; color:var(--maple-crimson);">¥ 0</div>
+            </div>
+            <div class="parsed-item" style="background:#F0FFF4;">
+              <span class="parsed-label" style="font-size:0.68rem;">純台幣支出 NT$</span>
+              <div id="exp-total-twd-only" style="font-size:1.05rem; font-weight:800; color:#059669;">NT$ 0</div>
             </div>
             <div class="parsed-item" style="background:#FFF9EF;">
-              <span class="parsed-label">折合台幣 (TWD)</span>
-              <div id="exp-total-twd" style="font-size:1.2rem; font-weight:800; color:var(--amber-gold);">NT$ 0</div>
+              <span class="parsed-label" style="font-size:0.68rem;">折合台幣加總</span>
+              <div id="exp-total-twd" style="font-size:1.05rem; font-weight:800; color:var(--amber-gold);">NT$ 0</div>
             </div>
           </div>
-          <div class="parsed-grid">
+          <!-- Row 2: Per-payer breakdown -->
+          <div class="parsed-grid" style="margin-bottom:10px;">
             <div class="parsed-item"><span class="parsed-label">❤️ 小計</span><div id="exp-me-total" class="parsed-val">NT$ 0</div></div>
             <div class="parsed-item"><span class="parsed-label">🐷 小計</span><div id="exp-husband-total" class="parsed-val">NT$ 0</div></div>
           </div>
+          <!-- Row 3: Card usage & remaining limits -->
+          <div class="flex-between" style="margin-bottom:8px; cursor:pointer;" onclick="window.toggleCardLimitsAccordion()">
+            <div style="font-size:0.78rem; font-weight:700; color:var(--kyoto-dark); display:flex; align-items:center; gap:6px;">
+              💳 各卡使用額度 <span id="card-limits-toggle-icon" style="font-size:0.72rem; color:var(--kyoto-muted); transition:transform 0.2s;">▼</span>
+            </div>
+            <button onclick="event.stopPropagation(); window.openCardLimitModal()" class="btn-secondary" style="padding:2px 8px; font-size:0.72rem; border-radius:6px; border:1px solid rgba(16,185,129,0.3); color:#047857;">⚙️ 管理卡片與額度</button>
+          </div>
+          <div id="exp-card-limits-container" style="display:none; flex-direction:column; gap:6px;"></div>
         </div>
 
         <!-- Expense History List -->
@@ -714,21 +728,17 @@
     <div id="modal-google-sheet-expense" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">📊 讀取 Google Sheet 試算表記帳</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div class="modal-title">📋 貼上 Google 試算表記帳資料</div>
+          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-google-sheet-expense')" style="color:#000;">✕</button>
         </div>
         <form id="form-google-sheet-expense" onsubmit="window.syncGoogleSheetExpense(event); return false;">
-          <div style="font-size:0.8rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.5; background:var(--washi-bg); padding:10px 12px; border-radius:10px;">
-            <b>💡 使用說明：</b><br/>
-            1. 在 Google 試算表中點選 <b>「檔案 ➔ 分享 ➔ 發布到 Web」</b><br/>
-            2. 選擇欲發布的記帳頁籤（例：`記帳`），格式選擇 <b>「逗號分隔值 (.csv)」</b> ➔ 點選發布<br/>
-            3. 將複製到的 <b>CSV 連結網址</b> 貼在下方即可一鍵自動讀取！
+          <div style="font-size:0.82rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.6; background:var(--washi-bg); padding:12px 14px; border-radius:10px; border:1px solid rgba(16,185,129,0.2);">
+            📌 <b>使用方式：</b>在 Google 試算表中選取記帳表格（含第 1 列標題列），按 <b>Ctrl+C</b> 複製，然後貼到下方文字框。
           </div>
           <div class="form-group">
-            <label class="form-label">Google Sheet 發布的 CSV 網址</label>
-            <input type="url" id="gs-expense-csv-url" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" required />
+            <textarea id="gs-expense-csv-text" class="form-control" rows="5" placeholder="在 Google 試算表中選取記帳表格（含第1列標題）按 Ctrl+C，然後貼在此處..."></textarea>
           </div>
-          <button type="button" onclick="window.syncGoogleSheetExpense(event)" class="btn-primary" style="margin-top:10px; background:#10B981;">⚡ 讀取並同步記帳資料</button>
+          <button type="button" onclick="window.syncGoogleSheetExpense(event)" class="btn-primary" style="margin-top:10px; background:#10B981; font-weight:800; font-size:0.95rem; padding:13px;">⚡ 匯入記帳資料</button>
         </form>
       </div>
     </div>
@@ -737,22 +747,71 @@
     <div id="modal-google-sheet-itinerary" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">📋 貼上 Google 試算表行程</div>
+          <div class="modal-title">📋 貼上 Google 試算表行程資料</div>
           <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-google-sheet-itinerary')" style="color:#000;">✕</button>
         </div>
         <form id="form-google-sheet-itinerary" onsubmit="window.syncGoogleSheetItinerary(event); return false;">
-          <div style="font-size:0.82rem; color:var(--kyoto-dark); margin-bottom:12px; line-height:1.6; background:var(--washi-bg); padding:12px; border-radius:12px; border:1px solid rgba(16, 185, 129, 0.3);">
-            <b style="color:#047857;">💡 貼上步驟（超簡單 3 步驟）：</b><br/>
-            1. 在 Google 試算表中選取您要同步的表格列（<b>含第 1 列標題</b>）<br/>
-            2. 按鍵盤 <b>Ctrl + C</b> 複製<br/>
-            3. 貼在下方方塊中，點選下方綠色按鈕即可一秒匯入！
+          <div style="font-size:0.82rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.6; background:var(--washi-bg); padding:12px 14px; border-radius:10px; border:1px solid rgba(16,185,129,0.2);">
+            📌 <b>使用方式：</b>在 Google 試算表中選取行程表格（含第 1 列標題列），按 <b>Ctrl+C</b> 複製，然後貼到下方文字框。
           </div>
           <div class="form-group">
-            <label class="form-label">請在此貼上複製的表格內容 (Ctrl + V)</label>
-            <textarea id="gs-itinerary-csv-text" class="form-control" rows="5" placeholder="在 Google 試算表中選取表格並按 Ctrl+C，然後貼在此處 (Ctrl+V)..." required></textarea>
+            <textarea id="gs-itinerary-csv-text" class="form-control" rows="5" placeholder="在 Google 試算表中選取行程表格（含第1列標題）按 Ctrl+C，然後貼在此處..."></textarea>
           </div>
-          <button type="button" onclick="window.syncGoogleSheetItinerary(event)" class="btn-primary" style="margin-top:10px; background:#10B981; font-weight:800; font-size:0.95rem; padding:12px;">⚡ 一鍵匯入全 10 天行程</button>
+          <button type="button" onclick="window.syncGoogleSheetItinerary(event)" class="btn-primary" style="margin-top:10px; background:#10B981; font-weight:800; font-size:0.95rem; padding:13px;">⚡ 匯入行程資料</button>
         </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL 14: CARD LIMITS SETTINGS ==================== -->
+    <div id="modal-card-limits" class="modal-overlay">
+      <div class="modal-sheet" style="max-height:85vh; overflow-y:auto; width:92%; max-width:520px;">
+        <div class="modal-header">
+          <div class="modal-title">💳 信用卡與回饋額度管理</div>
+          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-card-limits')" style="color:#000;">✕</button>
+        </div>
+
+        <!-- Add Card Button & Filter Chips -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;">
+          <div id="card-filter-chips" style="display:flex; gap:6px;">
+            <button type="button" class="chip-btn active" onclick="window.filterCardModal('all')" id="card-filter-all">全部</button>
+            <button type="button" class="chip-btn" onclick="window.filterCardModal('❤️')" id="card-filter-me">❤️ 我</button>
+            <button type="button" class="chip-btn" onclick="window.filterCardModal('🐷')" id="card-filter-hu">🐷 老公</button>
+          </div>
+          <button type="button" onclick="window.toggleAddCardForm()" class="btn-primary" style="padding:6px 12px; font-size:0.78rem; background:#10B981; border-radius:8px; white-space:nowrap;">
+            + 新增卡片
+          </button>
+        </div>
+
+        <!-- Inline Add / Edit Form -->
+        <div id="card-edit-form-box" style="display:none; background:var(--washi-bg); border:1.5px solid #10B981; border-radius:12px; padding:12px; margin-bottom:14px;">
+          <div id="card-form-title" style="font-weight:800; font-size:0.88rem; color:#047857; margin-bottom:10px;">➕ 新增信用卡</div>
+          <input type="hidden" id="card-edit-id" value="" />
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div>
+              <label style="font-size:0.75rem; font-weight:700; color:var(--kyoto-dark);">持卡人</label>
+              <select id="card-edit-owner" class="form-control" style="padding:6px; font-size:0.85rem;">
+                <option value="❤️">❤️ 我</option>
+                <option value="🐷">🐷 老公</option>
+                <option value="通用">通用 (現金/全支付)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.75rem; font-weight:700; color:var(--kyoto-dark);">卡片名稱</label>
+              <input type="text" id="card-edit-name" class="form-control" placeholder="例如: 熊本熊" style="padding:6px; font-size:0.85rem;" />
+            </div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--kyoto-dark);">刷卡/回饋上限金額 (NT$)</label>
+            <input type="number" id="card-edit-limit" class="form-control" placeholder="0 代表無上限" min="0" step="500" style="padding:6px; font-size:0.85rem;" />
+          </div>
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button type="button" onclick="window.toggleAddCardForm(false)" class="btn-secondary" style="padding:6px 12px; font-size:0.78rem;">取消</button>
+            <button type="button" onclick="window.saveCardItem()" class="btn-primary" style="padding:6px 14px; font-size:0.78rem; background:#10B981;">💾 儲存卡片</button>
+          </div>
+        </div>
+
+        <!-- Cards List Container -->
+        <div id="card-limits-inputs-container" style="display:flex; flex-direction:column; gap:8px; max-height:55vh; overflow-y:auto; padding-right:4px;"></div>
       </div>
     </div>
 

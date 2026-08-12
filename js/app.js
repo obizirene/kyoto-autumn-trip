@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentItineraryCategory = 'all';
   let currentShoppingLocationCategory = 'all';
   let currentLocationDetailId = null;
+  let isCardLimitsExpanded = false;
+  let currentCardFilter = 'all';
 
   // Calendar State
   let calYear = 2026;
@@ -130,13 +132,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function getCardsList() {
+    if (!tripData.cards || !Array.isArray(tripData.cards) || tripData.cards.length === 0) {
+      tripData.cards = JSON.parse(JSON.stringify(window.DEFAULT_CARDS));
+    }
+    return tripData.cards;
+  }
+
   function populateCardDropdowns() {
     const cardSelect = document.getElementById('exp-card');
-    if (cardSelect) {
-      cardSelect.innerHTML = window.CREDIT_CARDS.map(c => `
-        <option value="${c}">${c}</option>
-      `).join('');
-    }
+    if (!cardSelect) return;
+    const cards = getCardsList();
+    cardSelect.innerHTML = cards.map(c => {
+      const ownerLabel = c.owner && c.owner !== '通用' ? `${c.owner} ` : '';
+      return `<option value="${c.name}">${ownerLabel}${c.name}</option>`;
+    }).join('');
   }
 
   // --- LIGHTBOX PHOTO ZOOM MODULE ---
@@ -1104,202 +1114,98 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderGoogleSheetExpenseControlBar() {
     const container = document.getElementById('google-sheet-expense-control-container');
     if (!container) return;
-
-    if (tripData.googleSheetExpenseUrl) {
-      container.innerHTML = `
-        <div style="display:flex; gap:8px;">
-          <button id="gs-expense-one-click-refresh-btn" onclick="window.refreshGoogleSheetExpense()" class="btn-primary" style="flex:1; padding:10px 12px; font-size:0.85rem; background:#10B981; border-radius:10px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 4px 12px rgba(16, 185, 129, 0.25);" title="點擊一鍵刷新 Google Sheet 記帳">
-            🔄 一鍵刷新 Google Sheet 記帳
-          </button>
-          <button onclick="window.openGoogleSheetExpenseModal()" class="btn-secondary" style="padding:10px 12px; font-size:0.82rem; border-radius:10px; background:#FFFFFF; border:1px solid #10B981; color:#047857; font-weight:700; white-space:nowrap;" title="更換 Google Sheet 記帳網址">
-            ⚙️ 更換連結
-          </button>
-        </div>
-      `;
-    } else {
-      container.innerHTML = `
-        <button onclick="window.openGoogleSheetExpenseModal()" class="btn-secondary" style="width:100%; padding:10px 12px; font-size:0.82rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:10px; background:#FFFFFF; border:1px solid rgba(16, 185, 129, 0.4); color:#047857; font-weight:700;" title="點擊連結 Google 試算表自動讀取記帳">
-          📊 連結 Google Sheet 試算表記帳
-        </button>
-      `;
-    }
+    container.innerHTML = `
+      <button onclick="window.openGoogleSheetExpenseModal()" class="btn-primary" style="width:100%; padding:11px 14px; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:12px; background:#10B981; font-weight:800; box-shadow:0 4px 12px rgba(16, 185, 129, 0.25);">
+        📋 貼上 CSV 同步記帳
+      </button>
+    `;
   }
 
   window.openGoogleSheetExpenseModal = function() {
-    const urlInput = document.getElementById('gs-expense-csv-url');
-    if (urlInput) {
-      urlInput.value = tripData.googleSheetExpenseUrl || '';
-    }
     openModal('modal-google-sheet-expense');
   };
 
-  window.refreshGoogleSheetExpense = async function() {
-    if (!tripData.googleSheetExpenseUrl) {
-      window.openGoogleSheetExpenseModal();
-      return;
-    }
-    const btn = document.getElementById('gs-expense-one-click-refresh-btn');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '⏳ 正在讀取最新記帳中...';
-    }
-    try {
-      await window.syncGoogleSheetExpense(null, tripData.googleSheetExpenseUrl);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '🔄 一鍵刷新 Google Sheet 記帳';
-      }
-    }
-  };
-
-  window.syncGoogleSheetExpense = async function(e, overrideUrl) {
+  window.syncGoogleSheetExpense = async function(e) {
     if (e) { e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); }
 
-    const urlInput = document.getElementById('gs-expense-csv-url');
-    let rawUrl = overrideUrl || (urlInput ? urlInput.value.trim() : '');
+    const textInput = document.getElementById('gs-expense-csv-text');
+    let directText = textInput ? textInput.value.trim() : '';
 
-    if (!rawUrl) {
-      alert('請貼上 Google Sheet 記帳網址！');
+    if (!directText) {
+      alert('請先在 Google 試算表中選取記帳表格（含第1列標題），按 Ctrl+C，然後貼到文字框中！');
       return false;
     }
 
-    const btn = document.querySelector('#form-google-sheet-expense button');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '⏳ 正在連線讀取 Google Sheet 記帳中...';
-    }
+    const btn = document.querySelector('#form-google-sheet-expense button[type="button"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ 正在讀取與解析記帳中...'; }
 
-    function normalizeGoogleSheetUrl(raw) {
-      if (!raw) return '';
-      let url = raw.trim().replace(/\/+$/, '');
-      if (url.includes('/e/2PACX-')) {
-        if (url.includes('/pubhtml')) url = url.replace('/pubhtml', '/pub');
-        else if (!url.includes('/pub')) url += '/pub';
-        if (!url.includes('output=csv')) url += (url.includes('?') ? '&' : '?') + 'output=csv';
-        return url;
-      }
-      if (url.includes('docs.google.com/spreadsheets/d/')) {
-        const sheetIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]{15,})/);
-        const gidMatch = url.match(/gid=([0-9]+)/);
-        const gid = gidMatch ? gidMatch[1] : '0';
-        if (sheetIdMatch && sheetIdMatch[1]) {
-          return `https://docs.google.com/spreadsheets/d/${sheetIdMatch[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
-        }
-      }
-      if (url.includes('/pub') && !url.includes('output=csv')) {
-        url += (url.includes('?') ? '&' : '?') + 'output=csv';
-      }
-      return url;
-    }
 
-    let csvUrl = normalizeGoogleSheetUrl(rawUrl);
-
-    try {
-      const proxies = [
-        u => u,
-        u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-        u => 'https://corsproxy.io/?' + encodeURIComponent(u),
-        u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
-      ];
-
-      let csvText = null;
-      for (const p of proxies) {
-        try {
-          const res = await fetch(p(csvUrl));
-          if (res.ok) {
-            const txt = await res.text();
-            if (txt && !txt.includes('<!DOCTYPE html') && !txt.includes('<html')) {
-              csvText = txt;
-              break;
-            }
-          }
-        } catch (err) {
-          console.warn('Proxy fetch failed:', err);
-        }
-      }
-
-      if (!csvText) {
-        alert('❌ 讀取失敗：無法讀取 CSV 內容！請確認發布選擇「逗號分隔值 (.csv)」，或貼上標準編輯網址！');
-        return false;
-      }
-
-      function parseCSVGrid(text) {
-        const rows = [];
-        let currentRow = [];
-        let currentCell = '';
-        let inQuotes = false;
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          const nextChar = text[i + 1];
-          if (char === '"') {
-            if (inQuotes && nextChar === '"') { currentCell += '"'; i++; }
-            else { inQuotes = !inQuotes; }
-          } else if (char === ',' && !inQuotes) {
-            currentRow.push(currentCell.trim());
-            currentCell = '';
-          } else if ((char === '\r' || char === '\n') && !inQuotes) {
-            if (char === '\r' && nextChar === '\n') i++;
-            currentRow.push(currentCell.trim());
-            if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
-            currentRow = []; currentCell = '';
-          } else {
-            currentCell += char;
-          }
-        }
-        if (currentCell || currentRow.length > 0) {
+    function parseCSVGrid(text) {
+      if (!text) return [];
+      const isTabSeparated = text.includes('\t') || !text.includes(',');
+      const delimiter = isTabSeparated ? '\t' : ',';
+      const rows = [];
+      let currentRow = [], currentCell = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i], nextChar = text[i + 1];
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') { currentCell += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (char === delimiter && !inQuotes) {
+          currentRow.push(currentCell.trim()); currentCell = '';
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+          if (char === '\r' && nextChar === '\n') i++;
           currentRow.push(currentCell.trim());
           if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
-        }
-        return rows;
+          currentRow = []; currentCell = '';
+        } else { currentCell += char; }
       }
+      if (currentCell || currentRow.length > 0) {
+        currentRow.push(currentCell.trim());
+        if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
+      }
+      return rows;
+    }
 
+    const csvText = directText;
+
+    try {
       const rows = parseCSVGrid(csvText);
       if (rows.length <= 1) {
-        alert('❌ 讀取到的記帳內容為空！');
+        alert('❌ 讀取到的記帳內容為空！請確認選取了包含第一列標題的表格！');
         return false;
       }
 
       const headers = rows[0].map(h => h.toLowerCase().replace(/"/g, ''));
+      const importTs = Date.now();
       const parsedExpenses = [];
 
       for (let i = 1; i < rows.length; i++) {
-        const row = rows[i].map(c => c.replace(/^"|"$/g, ''));
-        if (row.length === 0) continue;
+        const row = rows[i].map(c => c.replace(/^"|"/g, ''));
+        if (!row.some(c => c)) continue;
 
         let date = '2026-11-20', time = '', item = '', costJPY = 0, costTWD = 0, payer = '❤️', category = '飲食', card = '現金', note = '';
 
         row.forEach((val, idx) => {
-          const h = headers[idx] || '';
-          const cleanVal = (val || '').trim();
-          if (h.includes('date') || h.includes('日期')) date = cleanVal || '2026-11-20';
-          else if (h.includes('time') || h.includes('時間')) time = cleanVal || '';
-          else if (h.includes('item') || h.includes('項目') || h.includes('名稱') || h.includes('消費')) item = cleanVal;
-          else if (h.includes('jpy') || h.includes('日圓') || h.includes('日幣')) {
-            costJPY = parseFloat(cleanVal.replace(/[^0-9.]/g, '')) || 0;
-          } else if (h.includes('twd') || h.includes('台幣') || h.includes('新台幣')) {
-            costTWD = parseFloat(cleanVal.replace(/[^0-9.]/g, '')) || 0;
-          } else if (h.includes('payer') || h.includes('付款人')) payer = cleanVal || '❤️';
-          else if (h.includes('category') || h.includes('分類')) category = cleanVal || '飲食';
-          else if (h.includes('card') || h.includes('支付方式') || h.includes('付款方式')) card = cleanVal || '現金';
-          else if (h.includes('note') || h.includes('備註') || h.includes('說明')) note = cleanVal;
+          const h = headers[idx] || '', v = (val || '').trim();
+          if (h.includes('date') || h.includes('日期')) date = v || '2026-11-20';
+          else if (h.includes('time') || h.includes('時間')) time = v;
+          else if (h.includes('item') || h.includes('項目') || h.includes('名稱') || h.includes('消費')) item = v;
+          else if (h.includes('jpy') || h.includes('日圓') || h.includes('日幣')) costJPY = parseFloat(v.replace(/[^0-9.]/g, '')) || 0;
+          else if (h.includes('twd') || h.includes('台幣') || h.includes('新台幣')) costTWD = parseFloat(v.replace(/[^0-9.]/g, '')) || 0;
+          else if (h.includes('payer') || h.includes('付款人')) payer = v || '❤️';
+          else if (h.includes('category') || h.includes('分類')) category = v || '飲食';
+          else if (h.includes('card') || h.includes('支付方式') || h.includes('付款方式')) card = v || '現金';
+          else if (h.includes('note') || h.includes('備註') || h.includes('說明')) note = v;
         });
 
         if (!item) continue;
 
-        let finalAmount = costJPY;
-        let finalCurrency = 'JPY';
-
-        if (costJPY > 0) {
-          finalAmount = costJPY;
-          finalCurrency = 'JPY';
-        } else if (costTWD > 0) {
-          finalAmount = costTWD;
-          finalCurrency = 'TWD';
-        }
+        const finalAmount = costJPY > 0 ? costJPY : costTWD;
+        const finalCurrency = costJPY > 0 ? 'JPY' : (costTWD > 0 ? 'TWD' : 'JPY');
 
         parsedExpenses.push({
-          id: 'exp-gs-' + i + '-' + Date.now(),
+          id: 'exp-gs-' + importTs + '-' + i,
           date: time ? `${date} ${time}` : date,
           time: time,
           title: item,
@@ -1313,35 +1219,34 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (parsedExpenses.length === 0) {
-        alert('⚠️ 未辨識到有效的消費項目！');
+        alert('⚠️ 未辨識到有效的消費項目！請確認第一列包含「日期, 項目, 日圓, 分類」標題欄位！');
         return false;
       }
 
+      // 完整覆蓋：先清空再設定，避免舊資料殘留
+      tripData.expenses = [];
+      window.StorageManager.saveData(tripData);
       tripData.expenses = parsedExpenses;
-      tripData.googleSheetExpenseUrl = rawUrl;
       saveDataAndUpdate();
-      closeModal('modal-google-sheet-expense');
-      alert(`✅ 成功同步 ${parsedExpenses.length} 筆記帳項目！`);
+      if (textInput) textInput.value = '';
+      window.closeModal('modal-google-sheet-expense');
+      alert(`✅ 成功匯入 ${parsedExpenses.length} 筆記帳項目！`);
       return true;
     } catch (err) {
-      console.error('Google Sheet Sync Error:', err);
-      alert('❌ 讀取失敗：' + err.message);
+      console.error('GS Expense Sync Error:', err);
+      alert('❌ 解析失敗：' + err.message);
       return false;
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '⚡ 讀取並同步記帳資料';
-      }
+      if (btn) { btn.disabled = false; btn.innerHTML = '⚡ 一鍵匯入記帳資料'; }
     }
   };
 
   function renderGoogleSheetItineraryControlBar() {
     const container = document.getElementById('google-sheet-itinerary-control-container');
     if (!container) return;
-
     container.innerHTML = `
-      <button onclick="window.openGoogleSheetItineraryModal()" class="btn-primary" style="width:100%; padding:11px 14px; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:12px; background:#10B981; font-weight:800; box-shadow:0 4px 12px rgba(16, 185, 129, 0.25);" title="點擊貼上 Google 試算表表格匯入行程">
-        📋 貼上 Google 試算表同步行程
+      <button onclick="window.openGoogleSheetItineraryModal()" class="btn-primary" style="width:100%; padding:11px 14px; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:12px; background:#10B981; font-weight:800; box-shadow:0 4px 12px rgba(16,185,129,0.25);">
+        📋 貼上 CSV 同步行程
       </button>
     `;
   }
@@ -1350,42 +1255,195 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openModal('modal-google-sheet-itinerary');
   };
 
-  window.syncGoogleSheetItinerary = function(e) {
+
+  window.toggleCardLimitsAccordion = function() {
+    isCardLimitsExpanded = !isCardLimitsExpanded;
+    const container = document.getElementById('exp-card-limits-container');
+    const icon = document.getElementById('card-limits-toggle-icon');
+    if (container) container.style.display = isCardLimitsExpanded ? 'flex' : 'none';
+    if (icon) icon.innerText = isCardLimitsExpanded ? '▲' : '▼';
+  };
+
+
+  window.filterCardModal = function(owner) {
+    currentCardFilter = owner;
+    ['all', 'me', 'hu'].forEach(k => {
+      const btn = document.getElementById(`card-filter-${k}`);
+      if (btn) btn.classList.remove('active');
+    });
+    if (owner === 'all') document.getElementById('card-filter-all')?.classList.add('active');
+    else if (owner === '❤️') document.getElementById('card-filter-me')?.classList.add('active');
+    else if (owner === '🐷') document.getElementById('card-filter-hu')?.classList.add('active');
+
+    renderCardModalList();
+  };
+
+  window.toggleAddCardForm = function(show = true, cardId = '') {
+    const box = document.getElementById('card-edit-form-box');
+    if (!box) return;
+    if (!show) {
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = 'block';
+
+    const cards = getCardsList();
+    const existing = cardId ? cards.find(c => c.id === cardId) : null;
+
+    document.getElementById('card-form-title').innerText = existing ? '✏️ 編輯信用卡' : '➕ 新增信用卡';
+    document.getElementById('card-edit-id').value = existing ? existing.id : '';
+    document.getElementById('card-edit-owner').value = existing ? existing.owner : '❤️';
+    document.getElementById('card-edit-name').value = existing ? existing.name : '';
+    document.getElementById('card-edit-limit').value = existing ? existing.limit : 0;
+  };
+
+  window.saveCardItem = function() {
+    const id = document.getElementById('card-edit-id').value;
+    const owner = document.getElementById('card-edit-owner').value;
+    const name = document.getElementById('card-edit-name').value.trim();
+    const limit = parseInt(document.getElementById('card-edit-limit').value, 10) || 0;
+
+    if (!name) {
+      alert('請輸入卡片名稱！');
+      return;
+    }
+
+    const cards = getCardsList();
+
+    if (id) {
+      const card = cards.find(c => c.id === id);
+      if (card) {
+        card.owner = owner;
+        card.name = name;
+        card.limit = limit;
+      }
+    } else {
+      if (cards.some(c => c.name === name && c.owner === owner)) {
+        alert(`已存在卡片名稱為「${name}」且持卡人為 ${owner} 的卡片！`);
+        return;
+      }
+      cards.push({
+        id: 'card-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        name,
+        owner,
+        limit
+      });
+    }
+
+    window.CREDIT_CARDS = Array.from(new Set(cards.map(c => c.name)));
+    saveDataAndUpdate();
+    window.toggleAddCardForm(false);
+    renderCardModalList();
+    populateCardDropdowns();
+  };
+
+  window.deleteCardItem = function(cardId) {
+    const cards = getCardsList();
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    // Protection check against existing expenses
+    const expenses = tripData.expenses || [];
+    const usedCount = expenses.filter(e => {
+      if (e.card !== card.name) return false;
+      if (card.owner === '通用') return true;
+      if (card.owner === '❤️' && (e.payer === '❤️' || e.payer === '我')) return true;
+      if (card.owner === '🐷' && (e.payer === '🐷' || e.payer === '老公')) return true;
+      return false;
+    }).length;
+
+    if (usedCount > 0) {
+      alert(`⚠️ 無法刪除「${card.owner} ${card.name}」！\n\n此卡片目前已在 ${usedCount} 筆記帳明細中使用。請先改用其他卡片，或刪除該筆記帳紀錄後才能刪除卡片！`);
+      return;
+    }
+
+    if (confirm(`確定要刪除卡片「${card.owner} ${card.name}」嗎？`)) {
+      tripData.cards = cards.filter(c => c.id !== cardId);
+      window.CREDIT_CARDS = Array.from(new Set(tripData.cards.map(c => c.name)));
+      saveDataAndUpdate();
+      renderCardModalList();
+      populateCardDropdowns();
+    }
+  };
+
+  function renderCardModalList() {
+    const container = document.getElementById('card-limits-inputs-container');
+    if (!container) return;
+
+    const cards = getCardsList();
+    const filtered = cards.filter(c => {
+      if (currentCardFilter === 'all') return true;
+      return c.owner === currentCardFilter || c.owner === '通用';
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--kyoto-muted);">尚無卡片資料，點擊上方「+ 新增卡片」建立！</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(card => {
+      const ownerBadge = card.owner === '❤️' ? '<span class="badge badge-spot" style="font-size:0.7rem;">❤️ 我</span>' :
+                         card.owner === '🐷' ? '<span class="badge badge-meal" style="font-size:0.7rem;">🐷 老公</span>' :
+                         '<span class="badge badge-transport" style="font-size:0.7rem;">通用</span>';
+      const limitText = card.limit > 0 ? `NT$ ${card.limit.toLocaleString()}` : '<span style="color:var(--kyoto-muted);">無上限</span>';
+
+      return `
+        <div style="display:flex; align-items:center; justify-content:space-between; background:#FFF; padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${ownerBadge}
+            <span style="font-weight:700; font-size:0.88rem; color:var(--kyoto-dark);">${card.name}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--maple-crimson); text-align:right;">
+              <span style="font-size:0.68rem; color:var(--kyoto-muted); font-weight:normal;">上限:</span> ${limitText}
+            </div>
+            <button type="button" onclick="window.toggleAddCardForm(true, '${card.id}')" style="background:none; border:none; color:var(--kyoto-muted); cursor:pointer; font-size:0.85rem;" title="編輯">✏️</button>
+            <button type="button" onclick="window.deleteCardItem('${card.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.openCardLimitModal = function() {
+    window.toggleAddCardForm(false);
+    renderCardModalList();
+    openModal('modal-card-limits');
+  };
+
+  window.syncGoogleSheetItinerary = async function(e) {
     if (e) { e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); }
 
     const textInput = document.getElementById('gs-itinerary-csv-text');
     let directText = textInput ? textInput.value.trim() : '';
 
     if (!directText) {
-      alert('請先在 Google 試算表中選取表格並按 Ctrl+C，然後貼在下方文字框中 (Ctrl+V)！');
+      alert('請先在 Google 試算表中選取行程表格（含第1列標題），按 Ctrl+C，然後貼到文字框中！');
       return false;
     }
+
+    const btn = document.querySelector('#form-google-sheet-itinerary button[type="button"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ 正在讀取與解析行程中...'; }
 
     function parseCSVGrid(text) {
       if (!text) return [];
       const isTabSeparated = text.includes('\t') || !text.includes(',');
       const delimiter = isTabSeparated ? '\t' : ',';
       const rows = [];
-      let currentRow = [];
-      let currentCell = '';
-      let inQuotes = false;
+      let currentRow = [], currentCell = '', inQuotes = false;
       for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const nextChar = text[i + 1];
+        const char = text[i], nextChar = text[i + 1];
         if (char === '"') {
           if (inQuotes && nextChar === '"') { currentCell += '"'; i++; }
           else { inQuotes = !inQuotes; }
         } else if (char === delimiter && !inQuotes) {
-          currentRow.push(currentCell.trim());
-          currentCell = '';
+          currentRow.push(currentCell.trim()); currentCell = '';
         } else if ((char === '\r' || char === '\n') && !inQuotes) {
           if (char === '\r' && nextChar === '\n') i++;
           currentRow.push(currentCell.trim());
           if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
           currentRow = []; currentCell = '';
-        } else {
-          currentCell += char;
-        }
+        } else { currentCell += char; }
       }
       if (currentCell || currentRow.length > 0) {
         currentRow.push(currentCell.trim());
@@ -1394,90 +1452,101 @@ document.addEventListener('DOMContentLoaded', () => {
       return rows;
     }
 
+    function buildCandidateUrls(raw) {
+      const trimmed = raw.trim();
+      const urls = [];
+      // Only match edit-format sheet ID (NOT /d/e/ published links)
+      const sheetIdMatch = trimmed.match(/\/d\/(?!e\/)([a-zA-Z0-9-_]{15,})/);
+      const gidMatch = trimmed.match(/gid=([0-9]+)/);
+      const gid = gidMatch ? gidMatch[1] : '0';
+      if (sheetIdMatch && sheetIdMatch[1]) {
+        const sid = sheetIdMatch[1];
+        urls.push(`https://docs.google.com/spreadsheets/d/${sid}/export?format=csv&gid=${gid}`);
+        urls.push(`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?tqx=out:csv&gid=${gid}`);
+      }
+      // Handle published-to-web URLs (/d/e/2PACX-...)
+      if (trimmed.includes('/e/2PACX-') || trimmed.includes('/pub')) {
+        let u = trimmed.replace('/pubhtml', '/pub');
+        if (!u.includes('/pub')) u += '/pub';
+        if (!u.includes('output=csv')) u += (u.includes('?') ? '&' : '?') + 'output=csv';
+        urls.push(u);
+      }
+      // Always include the original URL as fallback
+      if (!urls.includes(trimmed)) urls.push(trimmed);
+      return [...new Set(urls)];
+    }
+
+    const csvText = directText;
+
     try {
-      const rows = parseCSVGrid(directText);
+      const rows = parseCSVGrid(csvText);
       if (rows.length <= 1) {
-        alert('❌ 讀取到的行程內容為空！請確認選取並複製了包含第一列標題的表格！');
+        alert('❌ 讀取到的行程內容為空！請確認選取了包含第一列標題的表格！');
         return false;
       }
-
       const headers = rows[0].map(h => h.toLowerCase().replace(/"/g, ''));
+      const importTs = Date.now();
       const parsedItinerary = [];
 
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i].map(c => c.replace(/^"|"$/g, ''));
-        if (row.length === 0) continue;
-
+        if (!row.some(c => c)) continue;
         let day = 1, timeStr = '', title = '', category = '景點', location = '', costJPY = 0, note = '', mapsUrl = '';
 
         row.forEach((val, idx) => {
-          const h = headers[idx] || '';
-          const cleanVal = (val || '').trim();
+          const h = headers[idx] || '', v = (val || '').trim();
           if (h.includes('day') || h.includes('天數')) {
-            const parsedDay = parseInt(cleanVal.replace(/[^0-9]/g, '')) || 1;
-            day = Math.min(Math.max(parsedDay, 1), 10);
+            day = Math.min(Math.max(parseInt(v.replace(/[^0-9]/g, '')) || 1, 1), 10);
           } else if (h.includes('time') || h.includes('時間')) {
-            timeStr = cleanVal;
+            timeStr = v;
           } else if (h.includes('title') || h.includes('標題') || h.includes('行程標題') || h.includes('名稱')) {
-            title = cleanVal;
+            title = v;
           } else if (h.includes('category') || h.includes('分類')) {
-            const catRaw = cleanVal;
-            if (catRaw.includes('交通') || catRaw.includes('transport')) category = '交通';
-            else if (catRaw.includes('正餐') || catRaw.includes('飲食') || catRaw.includes('food') || catRaw.includes('餐廳')) category = '正餐';
-            else if (catRaw.includes('點心') || catRaw.includes('甜點') || catRaw.includes('咖啡') || catRaw.includes('cafe')) category = '點心';
-            else if (catRaw.includes('購物') || catRaw.includes('shopping')) category = '購物';
-            else if (catRaw.includes('住宿') || catRaw.includes('hotel') || catRaw.includes('stay')) category = '住宿';
-            else category = cleanVal || '景點';
+            if (v.includes('交通') || v.includes('transport')) category = '交通';
+            else if (v.includes('正餐') || v.includes('飲食') || v.includes('food') || v.includes('餐廳')) category = '正餐';
+            else if (v.includes('點心') || v.includes('甜點') || v.includes('咖啡') || v.includes('cafe')) category = '點心';
+            else if (v.includes('購物') || v.includes('shopping')) category = '購物';
+            else if (v.includes('住宿') || v.includes('hotel')) category = '住宿';
+            else category = v || '景點';
           } else if (h.includes('location') || h.includes('地點')) {
-            location = cleanVal;
+            location = v;
           } else if (h.includes('cost') || h.includes('jpy') || h.includes('預算') || h.includes('日圓')) {
-            costJPY = parseFloat(cleanVal.replace(/[^0-9.]/g, '')) || 0;
+            costJPY = parseFloat(v.replace(/[^0-9.]/g, '')) || 0;
           } else if (h.includes('note') || h.includes('備忘') || h.includes('說明')) {
-            note = cleanVal;
+            note = v;
           } else if (h.includes('map') || h.includes('網址')) {
-            mapsUrl = cleanVal;
+            mapsUrl = v;
           }
         });
 
         if (!title) continue;
-
-        parsedItinerary.push({
-          id: 'it-gs-' + i + '-' + Date.now(),
-          day: day,
-          time: timeStr || '09:00',
-          title: title,
-          category: category,
-          location: location || title,
-          costJPY: costJPY,
-          note: note,
-          mapsUrl: mapsUrl
-        });
+        parsedItinerary.push({ id: 'it-gs-' + importTs + '-' + i, day, time: timeStr || '09:00', title, category, location: location || title, costJPY, note, mapsUrl });
       }
 
       if (parsedItinerary.length === 0) {
-        alert('⚠️ 未辨識到有效的行程景點項目！請確認第一列包含「天數, 時間, 行程標題, 分類, 地點」標題欄位！');
+        alert('⚠️ 未辨識到有效行程項目！請確認第一列包含「天數, 時間, 行程標題, 分類, 地點」標題欄位！');
         return false;
       }
 
       const dayCounts = {};
-      parsedItinerary.forEach(item => {
-        dayCounts[item.day] = (dayCounts[item.day] || 0) + 1;
-      });
-      const daySummary = Object.keys(dayCounts)
-        .sort((a, b) => Number(a) - Number(b))
-        .map(d => `Day ${d}: ${dayCounts[d]} 筆`)
-        .join(', ');
+      parsedItinerary.forEach(item => { dayCounts[item.day] = (dayCounts[item.day] || 0) + 1; });
+      const daySummary = Object.keys(dayCounts).sort((a, b) => +a - +b).map(d => `Day ${d}: ${dayCounts[d]} 筆`).join(', ');
 
+      // 完整覆蓋：先清空再設定，避免舊資料殘留
+      tripData.itinerary = [];
+      window.StorageManager.saveData(tripData);
       tripData.itinerary = parsedItinerary;
       saveDataAndUpdate();
       if (textInput) textInput.value = '';
       window.closeModal('modal-google-sheet-itinerary');
-      alert(`✅ 成功匯入 ${parsedItinerary.length} 筆行程項目！\n\n📌 各天明細：${daySummary}\n\n💡 提示：點擊上方 Day 1 ~ Day 10 按鈕可切換查看對應日期的行程喔！`);
+      alert(`✅ 成功匯入 ${parsedItinerary.length} 筆行程！\n\n📌 各天明細：${daySummary}`);
       return true;
     } catch (err) {
-      console.error('Google Sheet Itinerary Sync Error:', err);
+      console.error('GS Itinerary Sync Error:', err);
       alert('❌ 解析失敗：' + err.message);
       return false;
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '⚡ 一鍵匯入全 10 天行程'; }
     }
   };
 
@@ -1667,31 +1736,96 @@ document.addEventListener('DOMContentLoaded', () => {
     const expenses = tripData.expenses || [];
     const rate = (tripData.flightInfo && tripData.flightInfo.exchangeRate) ? tripData.flightInfo.exchangeRate : 0.21;
 
-    let totalJPY = 0;
-    let totalTWD = 0;
+    let totalJPY = 0;      // sum of JPY expenses (as JPY)
+    let totalTWDOnly = 0;  // sum of TWD expenses (as TWD)
+    let totalCombinedTWD = 0; // all expenses converted to TWD and summed
     let meSpendTWD = 0;
     let husbandSpendTWD = 0;
+    const cardSpend = {}; // { cardName: totalTWD }
 
     expenses.forEach(exp => {
-      let twdVal = exp.currency === 'TWD' ? exp.amount : Math.round(exp.amount * rate);
-      let jpyVal = exp.currency === 'JPY' ? exp.amount : Math.round(exp.amount / rate);
-      
-      totalJPY += jpyVal;
-      totalTWD += twdVal;
+      const twdVal = exp.currency === 'TWD' ? exp.amount : Math.round(exp.amount * rate);
+      const jpyVal = exp.currency === 'JPY' ? exp.amount : 0;
+      const twdOnlyVal = exp.currency === 'TWD' ? exp.amount : 0;
+
+      if (jpyVal > 0) totalJPY += jpyVal;
+      if (twdOnlyVal > 0) totalTWDOnly += twdOnlyVal;
+      totalCombinedTWD += twdVal;
 
       if (exp.payer === '❤️' || exp.payer === '我') meSpendTWD += twdVal;
       else if (exp.payer === '🐷' || exp.payer === '老公') husbandSpendTWD += twdVal;
+
+      const cardName = exp.card || '現金';
+      cardSpend[cardName] = (cardSpend[cardName] || 0) + twdVal;
     });
 
     const totalJpyEl = document.getElementById('exp-total-jpy');
+    const totalTwdOnlyEl = document.getElementById('exp-total-twd-only');
     const totalTwdEl = document.getElementById('exp-total-twd');
     const meTotalEl = document.getElementById('exp-me-total');
     const husbandTotalEl = document.getElementById('exp-husband-total');
 
     if (totalJpyEl) totalJpyEl.innerText = `¥ ${totalJPY.toLocaleString()}`;
-    if (totalTwdEl) totalTwdEl.innerText = `NT$ ${totalTWD.toLocaleString()}`;
+    if (totalTwdOnlyEl) totalTwdOnlyEl.innerText = `NT$ ${totalTWDOnly.toLocaleString()}`;
+    if (totalTwdEl) totalTwdEl.innerText = `NT$ ${totalCombinedTWD.toLocaleString()}`;
     if (meTotalEl) meTotalEl.innerText = `NT$ ${meSpendTWD.toLocaleString()}`;
     if (husbandTotalEl) husbandTotalEl.innerText = `NT$ ${husbandSpendTWD.toLocaleString()}`;
+
+    // Render card usage & remaining limits
+    const cardLimitsContainer = document.getElementById('exp-card-limits-container');
+    const toggleIcon = document.getElementById('card-limits-toggle-icon');
+    if (cardLimitsContainer) {
+      cardLimitsContainer.style.display = isCardLimitsExpanded ? 'flex' : 'none';
+      if (toggleIcon) toggleIcon.innerText = isCardLimitsExpanded ? '▲' : '▼';
+
+      const cards = getCardsList();
+      const cardRows = cards.map(card => {
+        let used = 0;
+        expenses.forEach(exp => {
+          if (exp.card !== card.name) return;
+          const expAmount = exp.currency === 'TWD' ? exp.amount : Math.round(exp.amount * rate);
+          if (card.owner === '通用') {
+            used += expAmount;
+          } else if (card.owner === '❤️' && (exp.payer === '❤️' || exp.payer === '我')) {
+            used += expAmount;
+          } else if (card.owner === '🐷' && (exp.payer === '🐷' || exp.payer === '老公')) {
+            used += expAmount;
+          }
+        });
+
+        const limit = card.limit || 0;
+        if (used === 0 && limit === 0) return null;
+
+        const remaining = limit > 0 ? Math.max(0, limit - used) : null;
+        const pct = limit > 0 ? Math.min(100, Math.round(used / limit * 100)) : null;
+        const barColor = pct >= 100 ? '#DC2626' : pct >= 80 ? '#F59E0B' : '#10B981';
+        const ownerBadge = card.owner === '❤️' ? '❤️ ' : card.owner === '🐷' ? '🐷 ' : '';
+
+        return `
+          <div style="background:#F8FAF8; border-radius:8px; padding:8px 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="font-size:0.8rem; font-weight:700; color:var(--kyoto-dark);">💳 ${ownerBadge}${card.name}</span>
+              <span style="font-size:0.78rem; color:var(--kyoto-muted);">
+                已刷 <b style="color:var(--maple-crimson);">NT$ ${used.toLocaleString()}</b>
+                ${limit > 0 ? ` / 上限 NT$ ${limit.toLocaleString()}` : ' (無上限)'}
+              </span>
+            </div>
+            ${limit > 0 ? `
+              <div style="background:#E5E7EB; border-radius:4px; height:6px; overflow:hidden;">
+                <div style="width:${pct}%; height:100%; background:${barColor}; transition:width 0.4s;"></div>
+              </div>
+              <div style="font-size:0.72rem; color:${remaining===0?'#DC2626':'#059669'}; margin-top:3px; text-align:right;">
+                ${remaining === 0 ? '⚠️ 已達回饋上限' : `剩餘回饋額度 NT$ ${remaining.toLocaleString()}`}
+              </div>` : ''}
+          </div>`;
+      }).filter(Boolean);
+
+      if (cardRows.length === 0) {
+        cardLimitsContainer.innerHTML = '<div style="font-size:0.75rem;color:var(--kyoto-muted);">點擊右上方「⚙️ 管理卡片與額度」來設定信用卡！</div>';
+      } else {
+        cardLimitsContainer.innerHTML = cardRows.join('');
+      }
+    }
 
     const expListContainer = document.getElementById('expense-list-container');
     if (!expListContainer) return;

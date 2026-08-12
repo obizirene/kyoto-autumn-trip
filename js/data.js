@@ -25,24 +25,28 @@ window.ITINERARY_CATEGORIES = [
   { id: '交通', label: '🚃 交通' }
 ];
 
-window.CREDIT_CARDS = [
-  '現金',
-  '西瓜卡',
-  'icoca',
-  '熊本熊',
-  '永豐JCB',
-  '幣倍',
-  '大戶',
-  '全支付',
-  '吉鶴',
-  'sport',
-  'giving',
-  '星展永續',
-  '永豐outlet',
-  'cube',
-  '太陽',
-  'Green卡'
+window.DEFAULT_CARDS = [
+  { id: 'c-1', name: '現金', owner: '通用', limit: 0 },
+  { id: 'c-2', name: '西瓜卡', owner: '通用', limit: 0 },
+  { id: 'c-3', name: 'icoca', owner: '通用', limit: 0 },
+  { id: 'c-4', name: '全支付', owner: '通用', limit: 0 },
+  { id: 'c-5', name: '熊本熊', owner: '❤️', limit: 5000 },
+  { id: 'c-6', name: '永豐JCB', owner: '❤️', limit: 3000 },
+  { id: 'c-7', name: '幣倍', owner: '❤️', limit: 3000 },
+  { id: 'c-8', name: '大戶', owner: '❤️', limit: 3000 },
+  { id: 'c-9', name: '吉鶴', owner: '❤️', limit: 5000 },
+  { id: 'c-10', name: 'sport', owner: '❤️', limit: 3000 },
+  { id: 'c-11', name: 'giving', owner: '❤️', limit: 3000 },
+  { id: 'c-12', name: '星展永續', owner: '❤️', limit: 3000 },
+  { id: 'c-13', name: '永豐outlet', owner: '❤️', limit: 3000 },
+  { id: 'c-14', name: 'cube', owner: '❤️', limit: 5000 },
+  { id: 'c-15', name: '太陽', owner: '❤️', limit: 3000 },
+  { id: 'c-16', name: 'Green卡', owner: '❤️', limit: 3000 },
+  { id: 'c-17', name: '熊本熊', owner: '🐷', limit: 5000 },
+  { id: 'c-18', name: 'cube', owner: '🐷', limit: 5000 }
 ];
+
+window.CREDIT_CARDS = Array.from(new Set(window.DEFAULT_CARDS.map(c => c.name)));
 
 window.DEFAULT_TRIP_DATA = {
   // Fixed Flights (星宇航空 JX820 / JX835)
