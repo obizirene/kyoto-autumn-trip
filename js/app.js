@@ -567,35 +567,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.submitAddExpenseForm = function(e) {
-      if (e) e.preventDefault();
+      if (e) { e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); }
       
       const form = document.getElementById('form-add-expense');
-      let title = '';
-      let amount = 0;
-
       const directTitle = document.getElementById('exp-title');
-      if (directTitle && directTitle.value && directTitle.value.trim()) {
-        title = directTitle.value.trim();
-      }
-
-      if (!title && form) {
-        const titleInForm = form.querySelector('input[type="text"]:not([id="exp-id"]):not([id="exp-note"])');
-        if (titleInForm && titleInForm.value && titleInForm.value.trim()) {
-          title = titleInForm.value.trim();
-        }
-      }
+      const title = directTitle ? directTitle.value.trim() : '';
 
       const directAmount = document.getElementById('exp-amount');
-      if (directAmount && directAmount.value) {
-        amount = parseFloat(directAmount.value) || 0;
-      }
-
-      if (!amount && form) {
-        const amountInForm = form.querySelector('input[type="number"]');
-        if (amountInForm && amountInForm.value) {
-          amount = parseFloat(amountInForm.value) || 0;
-        }
-      }
+      const amount = directAmount ? (parseFloat(directAmount.value) || 0) : 0;
 
       if (!title) {
         alert('請輸入項目名稱！');
@@ -644,10 +623,6 @@ document.addEventListener('DOMContentLoaded', () => {
       addExpenseBtn.addEventListener('click', window.openAddExpenseModal);
     }
 
-    const expenseForm = document.getElementById('form-add-expense');
-    if (expenseForm) {
-      expenseForm.addEventListener('submit', window.submitAddExpenseForm);
-    }
 
     // 8. Add / Edit Itinerary Modal Handler
     const addItineraryBtn = document.getElementById('add-itinerary-modal-btn');
@@ -1843,19 +1818,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return `
         <div class="kyoto-card" onclick="editExpense('${exp.id}')" style="padding:14px 16px; margin-bottom:10px; cursor:pointer;" title="點擊編輯記帳">
-          <div class="flex-between" style="margin-bottom:4px;">
-            <div style="font-weight:700; font-size:0.95rem; color:var(--kyoto-dark);">${exp.title}</div>
-            <div style="font-weight:800; font-size:1.05rem; color:var(--maple-crimson);">${displayAmount}</div>
+          <div class="flex-between" style="margin-bottom:6px; align-items:flex-start; gap:10px;">
+            <div style="font-weight:700; font-size:0.92rem; color:var(--kyoto-dark); flex:1; min-width:0; word-break:break-word; line-height:1.35;">${exp.title}</div>
+            <div style="font-weight:800; font-size:1.05rem; color:var(--maple-crimson); white-space:nowrap; flex-shrink:0; text-align:right;">${displayAmount}</div>
           </div>
-          <div class="flex-between">
-            <div style="display:flex; gap:6px; align-items:center;">
+          <div class="flex-between" style="gap:8px; align-items:center; margin-bottom:6px;">
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
               <span class="badge badge-spot" style="font-size:0.7rem;">${exp.category}</span>
               <span class="badge badge-transport" style="font-size:0.7rem;">${exp.card}</span>
               <span class="badge badge-meal" style="font-size:0.78rem;">${payerEmoji}</span>
             </div>
-            <div style="font-size:0.72rem; color:var(--kyoto-muted);">${equivTWD}</div>
+            <div style="font-size:0.72rem; color:var(--kyoto-muted); white-space:nowrap; flex-shrink:0;">${equivTWD}</div>
           </div>
-          <div class="flex-between" style="margin-top:6px; font-size:0.72rem; color:var(--kyoto-muted);">
+          ${exp.note ? `
+            <div style="font-size:0.75rem; color:var(--kyoto-muted); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:6px; border-left:3px solid var(--amber-gold);" title="${exp.note.replace(/"/g, '&quot;')}">
+              📝 ${exp.note}
+            </div>
+          ` : ''}
+          <div class="flex-between" style="font-size:0.72rem; color:var(--kyoto-muted);">
             <div>${exp.date}</div>
             <div style="display:flex; gap:6px; align-items:center;">
               <button onclick="event.stopPropagation(); deleteExpense('${exp.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除記帳">🗑️</button>
