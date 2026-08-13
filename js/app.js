@@ -1740,9 +1740,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const meTotalEl = document.getElementById('exp-me-total');
     const husbandTotalEl = document.getElementById('exp-husband-total');
 
-    if (totalJpyEl) totalJpyEl.innerText = `¥ ${totalJPY.toLocaleString()}`;
-    if (totalTwdOnlyEl) totalTwdOnlyEl.innerText = `NT$ ${totalTWDOnly.toLocaleString()}`;
-    if (totalTwdEl) totalTwdEl.innerText = `NT$ ${totalCombinedTWD.toLocaleString()}`;
+    if (totalJpyEl) totalJpyEl.innerText = totalJPY.toLocaleString();
+    if (totalTwdOnlyEl) totalTwdOnlyEl.innerText = totalTWDOnly.toLocaleString();
+    if (totalTwdEl) totalTwdEl.innerText = totalCombinedTWD.toLocaleString();
     if (meTotalEl) meTotalEl.innerText = `NT$ ${meSpendTWD.toLocaleString()}`;
     if (husbandTotalEl) husbandTotalEl.innerText = `NT$ ${husbandSpendTWD.toLocaleString()}`;
 

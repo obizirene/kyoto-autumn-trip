@@ -104,18 +104,18 @@
             <button id="add-expense-modal-btn" onclick="window.openAddExpenseModal()" class="btn-secondary" style="padding:6px 12px; font-size:0.78rem;">+ 手動新增</button>
           </div>
           <!-- Row 1: JPY / TWD pure totals / combined -->
-          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:10px;">
-            <div class="parsed-item" style="background:#FFF5F5;">
-              <span class="parsed-label" style="font-size:0.68rem;">純日圓支出 ¥</span>
-              <div id="exp-total-jpy" style="font-size:1.05rem; font-weight:800; color:var(--maple-crimson);">¥ 0</div>
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-bottom:10px;">
+            <div class="parsed-item" style="background:#FFF5F5; padding:6px 8px;">
+              <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">純日圓支出 (¥)</span>
+              <div id="exp-total-jpy" style="font-size:0.95rem; font-weight:800; color:var(--maple-crimson); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">0</div>
             </div>
-            <div class="parsed-item" style="background:#F0FFF4;">
-              <span class="parsed-label" style="font-size:0.68rem;">純台幣支出 NT$</span>
-              <div id="exp-total-twd-only" style="font-size:1.05rem; font-weight:800; color:#059669;">NT$ 0</div>
+            <div class="parsed-item" style="background:#F0FFF4; padding:6px 8px;">
+              <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">純台幣支出 (NT$)</span>
+              <div id="exp-total-twd-only" style="font-size:0.95rem; font-weight:800; color:#059669; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">0</div>
             </div>
-            <div class="parsed-item" style="background:#FFF9EF;">
-              <span class="parsed-label" style="font-size:0.68rem;">折合台幣加總</span>
-              <div id="exp-total-twd" style="font-size:1.05rem; font-weight:800; color:var(--amber-gold);">NT$ 0</div>
+            <div class="parsed-item" style="background:#FFF9EF; padding:6px 8px;">
+              <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">折合台幣加總 (NT$)</span>
+              <div id="exp-total-twd" style="font-size:0.95rem; font-weight:800; color:var(--amber-gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">0</div>
             </div>
           </div>
           <!-- Row 2: Per-payer breakdown -->
