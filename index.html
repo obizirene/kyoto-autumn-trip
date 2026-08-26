@@ -11,7 +11,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="KansaiVibes26" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icon.jpg" />
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="shortcut icon" href="icon.png" type="image/png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icon.png" />
   <link rel="manifest" href="manifest.json" />
 
   <!-- Google Fonts -->
@@ -36,7 +38,10 @@
     <!-- Top Kyoto Header -->
     <header class="header-kyoto">
       <div class="header-top">
-        <div class="trip-badge">🍁 Kansai Vibes '26</div>
+        <div class="trip-badge" style="display:flex; align-items:center; gap:6px; padding:3px 10px 3px 6px;">
+          <img src="icon.png" style="width:20px; height:20px; object-fit:contain;" alt="Logo" />
+          <span>Kansai Vibes '26</span>
+        </div>
         <div class="header-actions">
           <button id="firebase-sync-btn" class="icon-btn-ghost" title="🔥 Firebase 雲端即時同步設定">🔥</button>
           <button id="export-data-modal-btn" class="icon-btn-ghost" title="📤 匯出 CSV / JSON">📤</button>
