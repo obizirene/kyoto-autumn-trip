@@ -96,10 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
         window.FirebaseManager.subscribeRealtime((cloudData) => {
           if (cloudData) {
             tripData = cloudData;
-            localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(tripData));
+            try {
+              localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(tripData));
+            } catch (e) {
+              console.warn('LocalStorage quota exceeded on realtime sync', e);
+            }
             renderAllViews();
-            if (currentLocationDetailId) {
-              renderLocationDetailModal(currentLocationDetailId);
+            const activeLocId = window.currentLocationDetailId || currentLocationDetailId;
+            if (activeLocId) {
+              renderLocationDetailModal(activeLocId);
             }
           }
         });
@@ -110,8 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveDataAndUpdate() {
     window.StorageManager.saveData(tripData);
     renderAllViews();
-    if (currentLocationDetailId) {
-      renderLocationDetailModal(currentLocationDetailId);
+    const activeLocId = window.currentLocationDetailId || currentLocationDetailId;
+    if (activeLocId) {
+      renderLocationDetailModal(activeLocId);
     }
   }
 
@@ -810,22 +816,53 @@ document.addEventListener('DOMContentLoaded', () => {
     addShoppingBtn.addEventListener('click', window.openAddShoppingModal);
   }
 
+  function compressImage(file, maxWidth = 800, quality = 0.75) {
+    return new Promise((resolve) => {
+      if (!file || !file.type.startsWith('image/')) {
+        resolve(null);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = function() {
+          resolve(evt.target.result);
+        };
+        img.src = evt.target.result;
+      };
+      reader.onerror = function() {
+        resolve(null);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   let uploadedShopImgBase64 = null;
   const shopImgInput = document.getElementById('shop-img-file');
   const shopImgPreview = document.getElementById('shop-img-preview');
   if (shopImgInput) {
-    shopImgInput.addEventListener('change', (e) => {
+    shopImgInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          uploadedShopImgBase64 = evt.target.result;
-          if (shopImgPreview) {
-            shopImgPreview.src = uploadedShopImgBase64;
-            shopImgPreview.style.display = 'block';
-          }
-        };
-        reader.readAsDataURL(file);
+        uploadedShopImgBase64 = await compressImage(file);
+        if (shopImgPreview) {
+          shopImgPreview.src = uploadedShopImgBase64;
+          shopImgPreview.style.display = 'block';
+        }
       }
     });
   }
@@ -942,18 +979,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const subitemImgInput = document.getElementById('subitem-img-file');
   const subitemImgPreview = document.getElementById('subitem-img-preview');
   if (subitemImgInput) {
-    subitemImgInput.addEventListener('change', (e) => {
+    subitemImgInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          uploadedSubitemImgBase64 = evt.target.result;
-          if (subitemImgPreview) {
-            subitemImgPreview.src = uploadedSubitemImgBase64;
-            subitemImgPreview.style.display = 'block';
-          }
-        };
-        reader.readAsDataURL(file);
+        uploadedSubitemImgBase64 = await compressImage(file);
+        if (subitemImgPreview) {
+          subitemImgPreview.src = uploadedSubitemImgBase64;
+          subitemImgPreview.style.display = 'block';
+        }
       }
     });
   }
@@ -1024,18 +1057,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const editSubitemImgInput = document.getElementById('edit-subitem-img-file');
     const editSubitemImgPreview = document.getElementById('edit-subitem-img-preview');
     if (editSubitemImgInput) {
-      editSubitemImgInput.addEventListener('change', (e) => {
+      editSubitemImgInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {
-          const reader = new FileReader();
-          reader.onload = function(evt) {
-            uploadedEditSubitemImgBase64 = evt.target.result;
-            if (editSubitemImgPreview) {
-              editSubitemImgPreview.src = uploadedEditSubitemImgBase64;
-              editSubitemImgPreview.style.display = 'block';
-            }
-          };
-          reader.readAsDataURL(file);
+          uploadedEditSubitemImgBase64 = await compressImage(file);
+          if (editSubitemImgPreview) {
+            editSubitemImgPreview.src = uploadedEditSubitemImgBase64;
+            editSubitemImgPreview.style.display = 'block';
+          }
         }
       });
     }
@@ -1063,6 +1092,10 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModal('modal-edit-subitem');
         editSubitemForm.reset();
         uploadedEditSubitemImgBase64 = null;
+        if (locId) {
+          window.currentLocationDetailId = locId;
+          currentLocationDetailId = locId;
+        }
         saveDataAndUpdate();
       });
     }
@@ -2578,8 +2611,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const filteredLocs = shoppingLocs.filter(loc => {
       if (currentShoppingLocationCategory === 'all') return true;
       if (currentShoppingLocationCategory.startsWith('day-')) {
-        const dayNum = currentShoppingLocationCategory.replace('day-', '');
-        return String(loc.day) === String(dayNum);
+        const dayNum = parseInt(currentShoppingLocationCategory.replace('day-', ''), 10);
+        if (loc.itineraryId) {
+          const boundIt = (tripData.itinerary || []).find(i => i.id === loc.itineraryId);
+          return boundIt && boundIt.day === dayNum;
+        }
+        return false;
       }
       return loc.category === currentShoppingLocationCategory;
     });
@@ -2881,6 +2918,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.openLocationDetailModal = function(locId) {
     window.currentLocationDetailId = locId;
+    currentLocationDetailId = locId;
     renderLocationDetailModal(locId);
     window.openModal('modal-shopping-detail');
   };
@@ -2890,6 +2928,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!loc) return;
 
     window.currentLocationDetailId = loc.id;
+    currentLocationDetailId = loc.id;
     document.getElementById('detail-location-name').innerText = `📍 ${loc.location}`;
     document.getElementById('detail-location-note').innerText = loc.note ? `💡 ${loc.note}` : '點擊空白處可編輯，長按可拖拉排序';
 
@@ -2953,6 +2992,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = loc.items.find(i => i.id === itemId);
       if (item) {
         item.bought = !Boolean(item.bought);
+        window.currentLocationDetailId = locId;
+        currentLocationDetailId = locId;
         saveDataAndUpdate();
       }
     }
@@ -2984,6 +3025,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loc = tripData.shopping.find(s => s.id === locId);
     if (loc && loc.items) {
       loc.items = loc.items.filter(i => i.id !== itemId);
+      window.currentLocationDetailId = locId;
+      currentLocationDetailId = locId;
       saveDataAndUpdate();
     }
   };

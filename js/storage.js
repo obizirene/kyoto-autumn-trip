@@ -19,16 +19,21 @@ window.StorageManager = {
   },
 
   saveData: function(data) {
+    // 1. Always push to Firebase Realtime DB / Firestore first
+    if (window.FirebaseManager && window.FirebaseManager.isInitialized) {
+      try {
+        window.FirebaseManager.saveDataToCloud(data);
+      } catch (err) {
+        console.warn('Firebase cloud sync call failed:', err);
+      }
+    }
+    // 2. Save to LocalStorage safely (catch quota errors without breaking sync)
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
-      // Async push to Firebase Firestore / Realtime DB if connected
-      if (window.FirebaseManager && window.FirebaseManager.isInitialized) {
-        window.FirebaseManager.saveDataToCloud(data);
-      }
       return true;
     } catch (e) {
-      console.error('Failed to save data:', e);
-      return false;
+      console.warn('LocalStorage quota exceeded or unavailable; cloud sync was still triggered.', e);
+      return true;
     }
   },
 
