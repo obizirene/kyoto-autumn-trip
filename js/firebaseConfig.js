@@ -4,10 +4,7 @@
  * https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app
  */
 
-window.FIREBASE_CONFIG_DEFAULT = {
-  projectId: "kyoto-trip-2026",
-  databaseURL: "https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app"
-};
+window.FIREBASE_CONFIG_DEFAULT = null;
 
 class FirebaseStorageManager {
   constructor() {
@@ -15,6 +12,7 @@ class FirebaseStorageManager {
     this.db = null;
     this.docRef = null;
     this.isInitialized = false;
+    this.syncEnabled = false; // Default to FALSE: protect cloud DB from local edits
     this.mode = 'rtdb'; // 'rtdb' or 'firestore'
     this.lastError = null;
   }
@@ -22,13 +20,15 @@ class FirebaseStorageManager {
   // Initialize Firebase with given config or default config
   init(customConfig) {
     if (typeof firebase === 'undefined') {
-      console.log('🔥 Firebase SDK not loaded in page. Using local storage mode.');
+      console.log('📱 Local Storage Mode (Firebase SDK not loaded).');
       return false;
     }
-    const config = customConfig || this.getSavedConfig() || window.FIREBASE_CONFIG_DEFAULT;
+    const config = customConfig || this.getSavedConfig();
     
     if (!config || (!config.projectId && !config.databaseURL)) {
-      console.log('🔥 Firebase not initialized (No Project ID or DB URL). Using local storage fallback.');
+      console.log('📱 Pure Local Storage Mode Active. Local edits will NOT affect cloud DB.');
+      this.isInitialized = false;
+      this.syncEnabled = false;
       return false;
     }
 
@@ -46,6 +46,7 @@ class FirebaseStorageManager {
           this.rtdbRef = rtdb.ref('kyoto_trip_data_v1');
           this.mode = 'rtdb';
           this.isInitialized = true;
+          this.syncEnabled = true;
           this.lastError = null;
           console.log('🔥 Firebase Realtime Database connected:', dbUrl);
           this.saveConfigLocally(config);
@@ -62,6 +63,7 @@ class FirebaseStorageManager {
         this.docRef = this.db.collection('kyoto_trips').doc('autumn_2026');
         this.mode = 'firestore';
         this.isInitialized = true;
+        this.syncEnabled = true;
         this.lastError = null;
         console.log('🔥 Firebase Firestore connected successfully!');
         this.saveConfigLocally(config);
@@ -85,9 +87,9 @@ class FirebaseStorageManager {
   getSavedConfig() {
     try {
       const saved = localStorage.getItem('kyoto_trip_firebase_config');
-      return saved ? JSON.parse(saved) : window.FIREBASE_CONFIG_DEFAULT;
+      return saved ? JSON.parse(saved) : null;
     } catch (e) {
-      return window.FIREBASE_CONFIG_DEFAULT;
+      return null;
     }
   }
 

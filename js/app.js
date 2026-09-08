@@ -1,4 +1,5 @@
 window.openModal = function(id) {
+  document.querySelectorAll('.modal-overlay, .lightbox-overlay').forEach(m => m.classList.remove('active'));
   const modal = document.getElementById(id);
   if (modal) modal.classList.add('active');
 };
@@ -624,6 +625,86 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // Itinerary Multi-Row Cost Management Helpers
+    window.addItineraryCostRow = function(name = '', amount = '', currency = 'JPY') {
+      const container = document.getElementById('it-cost-rows-container');
+      if (!container) return;
+
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'it-cost-row';
+      rowDiv.style.cssText = 'display:flex; gap:6px; align-items:center; margin-bottom:4px;';
+
+      const cleanName = String(name || '').replace(/"/g, '&quot;');
+      const cleanAmount = String(amount || '').replace(/"/g, '&quot;');
+      const curVal = (currency === 'TWD' || currency === 'NT' || currency === '$' || cleanAmount.includes('$')) ? 'TWD' : 'JPY';
+
+      rowDiv.innerHTML = `
+        <input type="text" class="form-control it-cost-name" placeholder="項目 (例: Haruka / 門票)" value="${cleanName}" style="flex:2; font-size:0.85rem; padding:6px 8px;" />
+        <input type="text" class="form-control it-cost-amount" placeholder="金額 (例: 2400*2 或 $406*2)" value="${cleanAmount}" style="flex:2; font-size:0.85rem; padding:6px 8px;" />
+        <select class="form-control it-cost-currency" style="flex:1.2; font-size:0.82rem; padding:6px 4px;">
+          <option value="JPY" ${curVal === 'JPY' ? 'selected' : ''}>日圓 (¥)</option>
+          <option value="TWD" ${curVal === 'TWD' ? 'selected' : ''}>台幣 ($)</option>
+        </select>
+        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:1.1rem; padding:2px 6px; flex-shrink:0;" title="刪除此列">✕</button>
+      `;
+
+      container.appendChild(rowDiv);
+    };
+
+    window.populateItineraryCostRows = function(item) {
+      const container = document.getElementById('it-cost-rows-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (item && item.costs && Array.isArray(item.costs) && item.costs.length > 0) {
+        item.costs.forEach(c => {
+          window.addItineraryCostRow(c.name || '', c.amount !== undefined ? String(c.amount) : '', c.currency || 'JPY');
+        });
+      } else if (item && (item.costJPY || item.cost)) {
+        const rawCost = String(item.costJPY || item.cost).trim();
+        const parsedItems = splitMultiCostItems(rawCost);
+        if (parsedItems.length > 0) {
+          parsedItems.forEach(pi => {
+            let currency = 'JPY';
+            if (pi.amountStr.includes('$') || pi.amountStr.toUpperCase().includes('NT') || pi.amountStr.toUpperCase().includes('TWD') || pi.amountStr.includes('台幣')) {
+              currency = 'TWD';
+            }
+            const cleanAmount = pi.amountStr.replace(/^[¥$]/, '').trim();
+            window.addItineraryCostRow(pi.name, cleanAmount, currency);
+          });
+        } else {
+          window.addItineraryCostRow('', '', 'JPY');
+        }
+      } else {
+        window.addItineraryCostRow('', '', 'JPY');
+      }
+    };
+
+    window.getItineraryCostsFromForm = function() {
+      const container = document.getElementById('it-cost-rows-container');
+      if (!container) return [];
+      const rows = container.querySelectorAll('.it-cost-row');
+      const result = [];
+      rows.forEach(row => {
+        const nameEl = row.querySelector('.it-cost-name');
+        const amountEl = row.querySelector('.it-cost-amount');
+        const currencyEl = row.querySelector('.it-cost-currency');
+
+        const name = nameEl ? nameEl.value.trim() : '';
+        let amount = amountEl ? amountEl.value.trim() : '';
+        let currency = currencyEl ? currencyEl.value : 'JPY';
+
+        if (amount.includes('$') || amount.toUpperCase().includes('NT') || amount.toUpperCase().includes('TWD') || amount.includes('台幣')) {
+          currency = 'TWD';
+        }
+
+        if (name || amount) {
+          result.push({ name, amount, currency });
+        }
+      });
+      return result;
+    };
+
     // 8. Add / Edit Itinerary Modal Handler
     const addItineraryBtn = document.getElementById('add-itinerary-modal-btn');
     if (addItineraryBtn) {
@@ -635,6 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('it-day').value = currentDay;
         document.getElementById('it-time-start').value = '09:00';
         document.getElementById('it-time-end').value = '11:30';
+        window.populateItineraryCostRows(null);
         openModal('modal-itinerary');
       });
     }
@@ -650,7 +732,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const startTime = document.getElementById('it-time-start').value || '09:00';
         const endTime = document.getElementById('it-time-end').value || '11:30';
-        const timeRangeStr = `${startTime} ~ ${endTime}`;
+        const timeRangeStr = `${startTime}~${endTime}`;
+
+        const costs = window.getItineraryCostsFromForm();
+        const costJPYStr = costs.map(c => {
+          const prefix = c.name ? `${c.name}: ` : '';
+          const symbol = c.currency === 'TWD' ? '$' : '¥';
+          return `${prefix}${symbol}${c.amount}`;
+        }).join(' | ');
 
         const itemObj = {
           id: itId ? itId : 'it-' + Date.now(),
@@ -660,14 +749,19 @@ document.addEventListener('DOMContentLoaded', () => {
           title: document.getElementById('it-title').value,
           category: document.getElementById('it-category').value,
           location: loc,
-          costJPY: document.getElementById('it-cost').value ? document.getElementById('it-cost').value.trim() : '',
+          costs: costs,
+          costJPY: costJPYStr,
           note: document.getElementById('it-note').value,
           mapsUrl: pastedUrl && pastedUrl.trim() ? pastedUrl.trim() : `https://maps.google.com/?q=${encodeURIComponent(loc)}`
         };
 
         if (itId) {
-          const idx = tripData.itinerary.findIndex(item => item.id === itId);
-          if (idx !== -1) tripData.itinerary[idx] = itemObj;
+          const idx = tripData.itinerary.findIndex(item => String(item.id) === String(itId));
+          if (idx !== -1) {
+            tripData.itinerary[idx] = itemObj;
+          } else {
+            tripData.itinerary.push(itemObj);
+          }
         } else {
           tripData.itinerary.push(itemObj);
         }
@@ -1738,21 +1832,102 @@ document.addEventListener('DOMContentLoaded', () => {
     return { amount, currency };
   }
 
-  function formatCostDisplay(val) {
-    if (val === null || val === undefined || val === '') return '';
-    if (typeof val === 'number') return `預算: ¥${val.toLocaleString()}`;
-    let str = String(val).trim();
-    if (!str) return '';
+  function splitMultiCostItems(rawStr) {
+    if (!rawStr) return [];
+    let str = String(rawStr).trim();
+    if (!str) return [];
 
-    if (str.startsWith('¥') || str.startsWith('$') || str.toUpperCase().startsWith('NT') || str.toUpperCase().startsWith('TWD')) {
-      return `預算: ${str}`;
+    const result = [];
+    // Match pattern: Group 1 = Name, Group 2 = Amount expression
+    // e.g. "關西機場 ➡︎ 京都 ( Haruka )：$406*2" or "京都 ➡︎ 二條 ( JR ): 180 *2"
+    const itemRegex = /([^\n\r|:：]+)[:：]\s*([\$¥]?[NTtwdTWD]*\s*[\d. \t*+-]+)/g;
+    let match;
+
+    while ((match = itemRegex.exec(str)) !== null) {
+      const name = match[1].trim();
+      const amountStr = match[2].trim();
+      if (amountStr) {
+        result.push({ name, amountStr, rawPart: match[0] });
+      }
     }
 
-    if (str.includes('$') || str.toUpperCase().includes('NT') || str.toUpperCase().includes('TWD') || str.includes('台幣')) {
-      return `預算: $${str}`;
+    // Fallback: If no colon-based item matched, split by newline/pipe and treat as non-named amounts
+    if (result.length === 0) {
+      const parts = str.split(/[\n\r|]+/);
+      parts.forEach(part => {
+        part = part.trim();
+        if (!part) return;
+        let name = '';
+        let amountStr = part;
+        if (part.includes(':') || part.includes('：')) {
+          const colonIdx = part.includes(':') ? part.indexOf(':') : part.indexOf('：');
+          name = part.slice(0, colonIdx).trim();
+          amountStr = part.slice(colonIdx + 1).trim();
+        }
+        result.push({ name, amountStr, rawPart: part });
+      });
     }
 
-    return `預算: ¥${str}`;
+    return result;
+  }
+
+  function getItemBudgetTotals(item) {
+    if (!item) return { totalJPY: 0, totalTWD: 0, itemDetails: [] };
+    let totalJPY = 0;
+    let totalTWD = 0;
+    const itemDetails = [];
+
+    if (item.costs && Array.isArray(item.costs) && item.costs.length > 0) {
+      item.costs.forEach(c => {
+        const { amount, currency } = parseCostExpressionAndCurrency(c.amount);
+        const finalCurrency = (c.currency === 'TWD' || currency === 'TWD') ? 'TWD' : 'JPY';
+        if (amount > 0) {
+          if (finalCurrency === 'TWD') totalTWD += amount;
+          else totalJPY += amount;
+          itemDetails.push({ name: c.name || '', amount, rawAmount: c.amount, currency: finalCurrency });
+        }
+      });
+    } else if (item.costJPY || item.cost) {
+      const raw = String(item.costJPY || item.cost).trim();
+      const parsedItems = splitMultiCostItems(raw);
+      parsedItems.forEach(pi => {
+        const { amount, currency } = parseCostExpressionAndCurrency(pi.amountStr);
+        if (amount > 0) {
+          if (currency === 'TWD') totalTWD += amount;
+          else totalJPY += amount;
+          const cleanRaw = pi.amountStr.replace(/^[¥$]/, '').trim();
+          itemDetails.push({ name: pi.name, amount, rawAmount: cleanRaw, currency });
+        }
+      });
+    }
+
+    return { totalJPY, totalTWD, itemDetails };
+  }
+
+  function formatCostDisplay(item) {
+    if (!item) return '';
+    const { totalJPY, totalTWD, itemDetails } = getItemBudgetTotals(item);
+
+    if (totalJPY === 0 && totalTWD === 0) return '';
+
+    let parts = [];
+    if (totalJPY > 0) parts.push(`¥${totalJPY.toLocaleString()}`);
+    if (totalTWD > 0) parts.push(`NT$ ${totalTWD.toLocaleString()}`);
+
+    let summaryText = `預算: ` + parts.join(' + ');
+
+    let detailsHtml = '';
+    if (itemDetails.length > 0) {
+      detailsHtml = `<div style="font-size:0.75rem; color:var(--kyoto-muted); font-weight:normal; margin-top:3px; display:flex; flex-direction:column; gap:2px;">` +
+        itemDetails.map(i => {
+          const label = i.name ? `${i.name}: ` : '';
+          const symbol = i.currency === 'TWD' ? 'NT$' : '¥';
+          return `<div>• ${label}${symbol}${i.rawAmount}</div>`;
+        }).join('') +
+        `</div>`;
+    }
+
+    return `<div><div>${summaryText}</div>${detailsHtml}</div>`;
   }
 
   // 3. Render Expense Tab & Summary
@@ -1791,17 +1966,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let itineraryItemCount = 0;
 
     itinerary.forEach(item => {
-      const rawCost = item.costJPY || item.cost;
-      if (rawCost) {
-        const { amount, currency } = parseCostExpressionAndCurrency(rawCost);
-        if (amount > 0) {
-          if (currency === 'TWD') {
-            totalItineraryTWDOnly += amount;
-          } else {
-            totalItineraryJPY += amount;
-          }
-          itineraryItemCount++;
-        }
+      const { totalJPY, totalTWD } = getItemBudgetTotals(item);
+      if (totalJPY > 0 || totalTWD > 0) {
+        totalItineraryJPY += totalJPY;
+        totalItineraryTWDOnly += totalTWD;
+        itineraryItemCount++;
       }
     });
 
@@ -2054,7 +2223,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Automatic repair for any existing corrupted localStorage itinerary data
     if (tripData.itinerary && Array.isArray(tripData.itinerary)) {
-      tripData.itinerary.forEach(item => {
+      tripData.itinerary.forEach((item, idx) => {
+        if (!item.id) item.id = 'it-' + Date.now() + '-' + idx;
         if (item.locationName && (!item.location || item.location === 'undefined')) item.location = item.locationName;
         if (item.location === 'undefined') item.location = item.title || '';
         if (item.timeStart && (!item.time || item.time === 'undefined')) item.time = item.timeEnd ? `${item.timeStart}~${item.timeEnd}` : item.timeStart;
@@ -2116,7 +2286,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     timelineContainer.innerHTML = dayTitleHeader + filtered.map(item => {
-      const displayTime = (item.time && item.time !== 'undefined') ? item.time : '';
+      let rawTime = (item.time && item.time !== 'undefined') ? String(item.time).trim() : '';
+      let displayTime = rawTime ? rawTime.replace(/\s*~\s*/g, '~').replace(/\s*-\s*/g, '~').replace(/\s*➔\s*/g, '~') : '';
       const displayLocation = (item.location && item.location !== 'undefined') ? item.location : '';
       const displayCategory = (item.category && item.category !== 'undefined') ? item.category : '景點';
       const mapsLink = item.mapsUrl || `https://maps.google.com/?q=${encodeURIComponent(displayLocation || item.title)}`;
@@ -2157,10 +2328,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
       }
 
+      const escapedId = String(item.id || '').replace(/'/g, "\\'");
+      const escapedTitle = item.title ? String(item.title).replace(/"/g, '&quot;').replace(/'/g, "\\'") : '';
+
       return `
         <div class="timeline-item">
           <div class="timeline-time">${displayTime}</div>
-          <div class="timeline-card" onclick="editItinerary('${item.id}')" style="cursor:pointer;" title="點擊編輯行程資訊">
+          <div class="timeline-card" data-it-id="${escapedId}" onclick="window.editItinerary(this)" style="cursor:pointer;" title="點擊編輯行程資訊">
             <div class="flex-between" style="margin-bottom:4px;">
               <div style="font-weight:800; font-size:0.98rem; color:var(--kyoto-dark);">${item.title}</div>
               <span class="badge ${badgeClass}">${badgeIcon} ${displayCategory}</span>
@@ -2169,16 +2343,27 @@ document.addEventListener('DOMContentLoaded', () => {
             ${(item.note && item.note !== 'undefined') ? `<div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:8px; background:var(--washi-bg); padding:6px 10px; border-radius:8px; white-space:pre-wrap; word-break:break-word; line-height:1.45;">💡 ${item.note}</div>` : ''}
             ${shoppingBadgesHtml}
             <div class="flex-between" style="margin-top:6px;">
-              <div style="font-size:0.75rem; font-weight:700; color:var(--maple-crimson);">${formatCostDisplay(item.costJPY)}</div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--maple-crimson);">${formatCostDisplay(item)}</div>
               <div style="display:flex; gap:6px; align-items:center;">
                 <a href="${mapsLink}" target="_blank" onclick="event.stopPropagation();" class="btn-icon-sm" style="text-decoration:none;" title="開啟地圖導航">🗺️</a>
-                <button onclick="event.stopPropagation(); deleteItinerary('${item.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除行程">🗑️</button>
+                <button onclick="event.stopPropagation(); window.deleteItinerary('${escapedId}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除行程">🗑️</button>
               </div>
             </div>
           </div>
         </div>
       `;
     }).join('');
+
+    timelineContainer.onclick = function(e) {
+      const card = e.target.closest('.timeline-card');
+      if (!card) return;
+      if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+        return;
+      }
+      if (window.editItinerary) {
+        window.editItinerary(card);
+      }
+    };
   }
 
   window.switchDay = function(d) {
@@ -2264,33 +2449,85 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  window.editItinerary = function(id) {
-    const item = tripData.itinerary.find(i => i.id === id);
-    if (!item) return;
+  window.editItinerary = function(arg, fallbackTitle = '') {
+    try {
+      if (!tripData.itinerary || !Array.isArray(tripData.itinerary)) {
+        window.openModal('modal-itinerary');
+        return;
+      }
 
-    const titleEl = document.getElementById('modal-itinerary-title');
-    if (titleEl) titleEl.innerText = '🗓️ 編輯行程景點';
+      let id = null;
+      let title = typeof fallbackTitle === 'string' ? fallbackTitle : '';
 
-    document.getElementById('it-id').value = item.id;
-    document.getElementById('it-day').value = item.day;
+      if (arg && typeof arg === 'object' && arg.dataset) {
+        id = arg.dataset.itId;
+        if (!title && arg.dataset.itTitle) title = arg.dataset.itTitle;
+      } else if (typeof arg === 'string' || typeof arg === 'number') {
+        id = String(arg);
+      }
 
-    const range = parseTimeRangeToHHMM(item.time);
-    document.getElementById('it-time-start').value = range.start;
-    document.getElementById('it-time-end').value = range.end;
+      let item = null;
+      if (id) {
+        item = tripData.itinerary.find(i => String(i.id) === String(id));
+      }
+      if (!item && title) {
+        item = tripData.itinerary.find(i => i.title === title);
+      }
 
-    document.getElementById('it-title').value = item.title || '';
-    document.getElementById('it-category').value = item.category || '景點';
-    document.getElementById('it-cost').value = item.costJPY || '';
-    document.getElementById('it-location').value = item.location || '';
-    document.getElementById('it-maps-url').value = item.mapsUrl || '';
-    document.getElementById('it-note').value = item.note || '';
+      if (item) {
+        const titleEl = document.getElementById('modal-itinerary-title');
+        if (titleEl) titleEl.innerText = '🗓️ 編輯行程景點';
 
-    openModal('modal-itinerary');
+        const idEl = document.getElementById('it-id');
+        if (idEl) idEl.value = item.id || '';
+
+        const dayEl = document.getElementById('it-day');
+        if (dayEl) dayEl.value = item.day || currentDay || 1;
+
+        populate10MinTimeDropdowns();
+        const range = parseTimeRangeToHHMM(item.time);
+        const startEl = document.getElementById('it-time-start');
+        const endEl = document.getElementById('it-time-end');
+        if (startEl) startEl.value = range.start;
+        if (endEl) endEl.value = range.end;
+
+        const titleInput = document.getElementById('it-title');
+        if (titleInput) titleInput.value = item.title || '';
+
+        let cat = item.category || '景點';
+        if (cat === 'spot') cat = '景點';
+        else if (cat === 'food') cat = '正餐';
+        else if (cat === 'cafe') cat = '點心';
+        else if (cat === 'shopping') cat = '購物';
+        else if (cat === 'transport') cat = '交通';
+        else if (cat === 'hotel') cat = '住宿';
+
+        const catEl = document.getElementById('it-category');
+        if (catEl) catEl.value = cat;
+
+        if (window.populateItineraryCostRows) {
+          window.populateItineraryCostRows(item);
+        }
+
+        const locEl = document.getElementById('it-location');
+        if (locEl) locEl.value = item.location || item.title || '';
+
+        const mapsEl = document.getElementById('it-maps-url');
+        if (mapsEl) mapsEl.value = item.mapsUrl || '';
+
+        const noteEl = document.getElementById('it-note');
+        if (noteEl) noteEl.value = item.note || '';
+      }
+    } catch (err) {
+      console.error('Error populating edit itinerary modal:', err);
+    } finally {
+      window.openModal('modal-itinerary');
+    }
   };
 
   window.deleteItinerary = function(id) {
     if (confirm('確定刪除此行程嗎？')) {
-      tripData.itinerary = tripData.itinerary.filter(i => i.id !== id);
+      tripData.itinerary = tripData.itinerary.filter(i => String(i.id) !== String(id));
       saveDataAndUpdate();
     }
   };

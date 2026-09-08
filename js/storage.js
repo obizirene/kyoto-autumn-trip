@@ -292,7 +292,7 @@ window.StorageManager = {
           title: row[2] || '行程',
           category: row[3] || '景點',
           location: loc,
-          costJPY: parseInt(row[5], 10) || 0,
+          costJPY: row[5] || '',
           mapsUrl: row[6] || `https://maps.google.com/?q=${encodeURIComponent(loc)}`,
           note: row[7] || ''
         };

@@ -499,7 +499,7 @@ body {
 /* Timeline Item (Itinerary) */
 .timeline-item {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   position: relative;
   padding-bottom: 20px;
 }
@@ -507,7 +507,7 @@ body {
 .timeline-item::before {
   content: "";
   position: absolute;
-  left: 39px;
+  left: 86px;
   top: 32px;
   bottom: 0;
   width: 2px;
@@ -519,12 +519,14 @@ body {
 }
 
 .timeline-time {
-  flex: 0 0 65px;
+  flex: 0 0 80px;
+  min-width: 80px;
   text-align: right;
   font-size: 0.82rem;
   font-weight: 800;
   color: var(--amber-gold);
   padding-top: 4px;
+  white-space: nowrap;
 }
 
 .timeline-card {
