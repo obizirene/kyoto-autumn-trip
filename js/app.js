@@ -1466,7 +1466,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i].map(c => c.replace(/^"|"$/g, ''));
         if (!row.some(c => c)) continue;
-        let day = 1, timeStr = '', title = '', category = '景點', location = '', costJPY = 0, note = '', mapsUrl = '';
+        let day = 1, timeStr = '', title = '', category = '景點', location = '', costJPY = '', note = '', mapsUrl = '';
 
         row.forEach((val, idx) => {
           const h = headers[idx] || '', v = (val || '').trim();
@@ -1486,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } else if (h.includes('location') || h.includes('地點')) {
             location = v;
           } else if (h.includes('cost') || h.includes('jpy') || h.includes('預算') || h.includes('日圓')) {
-            costJPY = parseFloat(v.replace(/[^0-9.]/g, '')) || 0;
+            costJPY = v;
           } else if (h.includes('note') || h.includes('備忘') || h.includes('說明')) {
             note = v;
           } else if (h.includes('map') || h.includes('網址')) {
