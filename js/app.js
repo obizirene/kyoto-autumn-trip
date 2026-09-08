@@ -96,15 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.FirebaseManager.subscribeRealtime((cloudData) => {
           if (cloudData) {
             tripData = cloudData;
-            try {
-              localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(tripData));
-            } catch (e) {
-              console.warn('LocalStorage quota exceeded on realtime sync', e);
-            }
+            localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(tripData));
             renderAllViews();
-            const activeLocId = window.currentLocationDetailId || currentLocationDetailId;
-            if (activeLocId) {
-              renderLocationDetailModal(activeLocId);
+            if (currentLocationDetailId) {
+              renderLocationDetailModal(currentLocationDetailId);
             }
           }
         });
@@ -115,9 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveDataAndUpdate() {
     window.StorageManager.saveData(tripData);
     renderAllViews();
-    const activeLocId = window.currentLocationDetailId || currentLocationDetailId;
-    if (activeLocId) {
-      renderLocationDetailModal(activeLocId);
+    if (currentLocationDetailId) {
+      renderLocationDetailModal(currentLocationDetailId);
     }
   }
 
@@ -666,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
           title: document.getElementById('it-title').value,
           category: document.getElementById('it-category').value,
           location: loc,
-          costJPY: parseInt(document.getElementById('it-cost').value, 10) || 0,
+          costJPY: document.getElementById('it-cost').value ? document.getElementById('it-cost').value.trim() : '',
           note: document.getElementById('it-note').value,
           mapsUrl: pastedUrl && pastedUrl.trim() ? pastedUrl.trim() : `https://maps.google.com/?q=${encodeURIComponent(loc)}`
         };
@@ -816,53 +810,22 @@ document.addEventListener('DOMContentLoaded', () => {
     addShoppingBtn.addEventListener('click', window.openAddShoppingModal);
   }
 
-  function compressImage(file, maxWidth = 800, quality = 0.75) {
-    return new Promise((resolve) => {
-      if (!file || !file.type.startsWith('image/')) {
-        resolve(null);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = function() {
-          resolve(evt.target.result);
-        };
-        img.src = evt.target.result;
-      };
-      reader.onerror = function() {
-        resolve(null);
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
   let uploadedShopImgBase64 = null;
   const shopImgInput = document.getElementById('shop-img-file');
   const shopImgPreview = document.getElementById('shop-img-preview');
   if (shopImgInput) {
-    shopImgInput.addEventListener('change', async (e) => {
+    shopImgInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
-        uploadedShopImgBase64 = await compressImage(file);
-        if (shopImgPreview) {
-          shopImgPreview.src = uploadedShopImgBase64;
-          shopImgPreview.style.display = 'block';
-        }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          uploadedShopImgBase64 = evt.target.result;
+          if (shopImgPreview) {
+            shopImgPreview.src = uploadedShopImgBase64;
+            shopImgPreview.style.display = 'block';
+          }
+        };
+        reader.readAsDataURL(file);
       }
     });
   }
@@ -979,14 +942,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const subitemImgInput = document.getElementById('subitem-img-file');
   const subitemImgPreview = document.getElementById('subitem-img-preview');
   if (subitemImgInput) {
-    subitemImgInput.addEventListener('change', async (e) => {
+    subitemImgInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
-        uploadedSubitemImgBase64 = await compressImage(file);
-        if (subitemImgPreview) {
-          subitemImgPreview.src = uploadedSubitemImgBase64;
-          subitemImgPreview.style.display = 'block';
-        }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          uploadedSubitemImgBase64 = evt.target.result;
+          if (subitemImgPreview) {
+            subitemImgPreview.src = uploadedSubitemImgBase64;
+            subitemImgPreview.style.display = 'block';
+          }
+        };
+        reader.readAsDataURL(file);
       }
     });
   }
@@ -1057,14 +1024,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const editSubitemImgInput = document.getElementById('edit-subitem-img-file');
     const editSubitemImgPreview = document.getElementById('edit-subitem-img-preview');
     if (editSubitemImgInput) {
-      editSubitemImgInput.addEventListener('change', async (e) => {
+      editSubitemImgInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-          uploadedEditSubitemImgBase64 = await compressImage(file);
-          if (editSubitemImgPreview) {
-            editSubitemImgPreview.src = uploadedEditSubitemImgBase64;
-            editSubitemImgPreview.style.display = 'block';
-          }
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            uploadedEditSubitemImgBase64 = evt.target.result;
+            if (editSubitemImgPreview) {
+              editSubitemImgPreview.src = uploadedEditSubitemImgBase64;
+              editSubitemImgPreview.style.display = 'block';
+            }
+          };
+          reader.readAsDataURL(file);
         }
       });
     }
@@ -1092,10 +1063,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModal('modal-edit-subitem');
         editSubitemForm.reset();
         uploadedEditSubitemImgBase64 = null;
-        if (locId) {
-          window.currentLocationDetailId = locId;
-          currentLocationDetailId = locId;
-        }
         saveDataAndUpdate();
       });
     }
@@ -1702,7 +1669,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <button onclick="event.stopPropagation(); deleteHotel('${h.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除住宿">🗑️</button>
             </div>
           </div>
-          ${h.notes ? `<div style="font-size:0.78rem; color:var(--amber-gold); margin-bottom:10px; background:var(--washi-bg); padding:6px 10px; border-radius:8px;">💡 ${h.notes}</div>` : ''}
+          ${h.notes ? `<div style="font-size:0.78rem; color:var(--amber-gold); margin-bottom:10px; background:var(--washi-bg); padding:6px 10px; border-radius:8px; white-space:pre-wrap; word-break:break-word; line-height:1.45;">💡 ${h.notes}</div>` : ''}
           <div class="parsed-grid">
             <div class="parsed-item"><span class="parsed-label">入住 Check-in</span><div class="parsed-val">${h.checkIn || '-'}</div></div>
             <div class="parsed-item"><span class="parsed-label">退房 Check-out${stayNightsText}</span><div class="parsed-val">${h.checkOut || '-'}</div></div>
@@ -1738,6 +1705,56 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  function parseCostExpressionAndCurrency(val) {
+    if (typeof val === 'number') return { amount: isNaN(val) ? 0 : val, currency: 'JPY' };
+    if (!val) return { amount: 0, currency: 'JPY' };
+    let str = String(val).trim();
+    if (!str) return { amount: 0, currency: 'JPY' };
+
+    let currency = 'JPY';
+    if (str.includes('$') || str.toUpperCase().includes('NT') || str.toUpperCase().includes('TWD') || str.includes('台幣')) {
+      currency = 'TWD';
+    }
+
+    let amount = 0;
+    if (str.includes('*') || str.includes('+') || str.includes('/') || str.includes('-')) {
+      try {
+        let expr = str.replace(/[^\d*+./-]/g, '').trim();
+        if (expr && /^[0-9. \t*+-]+$/.test(expr)) {
+          const calculated = Function('"use strict";return (' + expr + ')')();
+          if (typeof calculated === 'number' && !isNaN(calculated) && isFinite(calculated)) {
+            amount = calculated;
+          }
+        }
+      } catch (err) {}
+    }
+
+    if (amount === 0) {
+      const cleanNumStr = str.replace(/[^0-9.]/g, '');
+      const num = parseFloat(cleanNumStr);
+      amount = isNaN(num) ? 0 : num;
+    }
+
+    return { amount, currency };
+  }
+
+  function formatCostDisplay(val) {
+    if (val === null || val === undefined || val === '') return '';
+    if (typeof val === 'number') return `預算: ¥${val.toLocaleString()}`;
+    let str = String(val).trim();
+    if (!str) return '';
+
+    if (str.startsWith('¥') || str.startsWith('$') || str.toUpperCase().startsWith('NT') || str.toUpperCase().startsWith('TWD')) {
+      return `預算: ${str}`;
+    }
+
+    if (str.includes('$') || str.toUpperCase().includes('NT') || str.toUpperCase().includes('TWD') || str.includes('台幣')) {
+      return `預算: $${str}`;
+    }
+
+    return `預算: ¥${str}`;
+  }
+
   // 3. Render Expense Tab & Summary
   function renderExpenseTab() {
     renderGoogleSheetExpenseControlBar();
@@ -1766,6 +1783,39 @@ document.addEventListener('DOMContentLoaded', () => {
       const cardName = exp.card || '現金';
       cardSpend[cardName] = (cardSpend[cardName] || 0) + twdVal;
     });
+
+    // Calculate Itinerary Budget Total split by currency (JPY vs TWD)
+    const itinerary = tripData.itinerary || [];
+    let totalItineraryJPY = 0;
+    let totalItineraryTWDOnly = 0;
+    let itineraryItemCount = 0;
+
+    itinerary.forEach(item => {
+      const rawCost = item.costJPY || item.cost;
+      if (rawCost) {
+        const { amount, currency } = parseCostExpressionAndCurrency(rawCost);
+        if (amount > 0) {
+          if (currency === 'TWD') {
+            totalItineraryTWDOnly += amount;
+          } else {
+            totalItineraryJPY += amount;
+          }
+          itineraryItemCount++;
+        }
+      }
+    });
+
+    const totalItineraryCombinedTWD = Math.round(totalItineraryJPY * rate) + totalItineraryTWDOnly;
+
+    const itBudgetJpyEl = document.getElementById('it-budget-total-jpy');
+    const itBudgetTwdOnlyEl = document.getElementById('it-budget-total-twd-only');
+    const itBudgetTwdEl = document.getElementById('it-budget-total-twd');
+    const itBudgetCountEl = document.getElementById('it-budget-count');
+
+    if (itBudgetJpyEl) itBudgetJpyEl.innerText = `¥ ${totalItineraryJPY.toLocaleString()}`;
+    if (itBudgetTwdOnlyEl) itBudgetTwdOnlyEl.innerText = `NT$ ${totalItineraryTWDOnly.toLocaleString()}`;
+    if (itBudgetTwdEl) itBudgetTwdEl.innerText = `NT$ ${totalItineraryCombinedTWD.toLocaleString()}`;
+    if (itBudgetCountEl) itBudgetCountEl.innerText = `共 ${itineraryItemCount} 筆預估費用`;
 
     const totalJpyEl = document.getElementById('exp-total-jpy');
     const totalTwdOnlyEl = document.getElementById('exp-total-twd-only');
@@ -2116,10 +2166,10 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="badge ${badgeClass}">${badgeIcon} ${displayCategory}</span>
             </div>
             ${displayLocation ? `<div style="font-size:0.8rem; color:var(--amber-gold); margin-bottom:6px;">📍 ${displayLocation}</div>` : ''}
-            ${(item.note && item.note !== 'undefined') ? `<div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:8px; background:var(--washi-bg); padding:6px 10px; border-radius:8px;">💡 ${item.note}</div>` : ''}
+            ${(item.note && item.note !== 'undefined') ? `<div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:8px; background:var(--washi-bg); padding:6px 10px; border-radius:8px; white-space:pre-wrap; word-break:break-word; line-height:1.45;">💡 ${item.note}</div>` : ''}
             ${shoppingBadgesHtml}
             <div class="flex-between" style="margin-top:6px;">
-              <div style="font-size:0.75rem; font-weight:700; color:var(--maple-crimson);">${item.costJPY ? `預算: ¥${item.costJPY.toLocaleString()}` : ''}</div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--maple-crimson);">${formatCostDisplay(item.costJPY)}</div>
               <div style="display:flex; gap:6px; align-items:center;">
                 <a href="${mapsLink}" target="_blank" onclick="event.stopPropagation();" class="btn-icon-sm" style="text-decoration:none;" title="開啟地圖導航">🗺️</a>
                 <button onclick="event.stopPropagation(); deleteItinerary('${item.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除行程">🗑️</button>
@@ -2611,12 +2661,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const filteredLocs = shoppingLocs.filter(loc => {
       if (currentShoppingLocationCategory === 'all') return true;
       if (currentShoppingLocationCategory.startsWith('day-')) {
-        const dayNum = parseInt(currentShoppingLocationCategory.replace('day-', ''), 10);
-        if (loc.itineraryId) {
-          const boundIt = (tripData.itinerary || []).find(i => i.id === loc.itineraryId);
-          return boundIt && boundIt.day === dayNum;
-        }
-        return false;
+        const dayNum = currentShoppingLocationCategory.replace('day-', '');
+        return String(loc.day) === String(dayNum);
       }
       return loc.category === currentShoppingLocationCategory;
     });
@@ -2918,7 +2964,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.openLocationDetailModal = function(locId) {
     window.currentLocationDetailId = locId;
-    currentLocationDetailId = locId;
     renderLocationDetailModal(locId);
     window.openModal('modal-shopping-detail');
   };
@@ -2928,7 +2973,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!loc) return;
 
     window.currentLocationDetailId = loc.id;
-    currentLocationDetailId = loc.id;
     document.getElementById('detail-location-name').innerText = `📍 ${loc.location}`;
     document.getElementById('detail-location-note').innerText = loc.note ? `💡 ${loc.note}` : '點擊空白處可編輯，長按可拖拉排序';
 
@@ -2992,8 +3036,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = loc.items.find(i => i.id === itemId);
       if (item) {
         item.bought = !Boolean(item.bought);
-        window.currentLocationDetailId = locId;
-        currentLocationDetailId = locId;
         saveDataAndUpdate();
       }
     }
@@ -3025,8 +3067,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loc = tripData.shopping.find(s => s.id === locId);
     if (loc && loc.items) {
       loc.items = loc.items.filter(i => i.id !== itemId);
-      window.currentLocationDetailId = locId;
-      currentLocationDetailId = locId;
       saveDataAndUpdate();
     }
   };

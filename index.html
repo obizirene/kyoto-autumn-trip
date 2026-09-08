@@ -102,6 +102,34 @@
           <div id="nlp-parsed-preview"></div>
         </div>
 
+        <!-- Itinerary Budget Summary Banner Card -->
+        <div id="itinerary-budget-summary-card" class="kyoto-card" style="margin-bottom:14px; background:linear-gradient(135deg, #FFFDF9 0%, #FFF8EE 100%); border:1.5px solid rgba(229,169,60,0.35);">
+          <div class="flex-between" style="margin-bottom:8px;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--amber-gold); display:flex; align-items:center; gap:6px;">
+              📊 行程規劃預估總預算
+            </div>
+            <span id="it-budget-count" style="font-size:0.72rem; color:var(--kyoto-muted);">共 0 筆預算項目</span>
+          </div>
+          <!-- 3-Column Grid for Pure JPY / Pure TWD / Combined TWD -->
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-bottom:8px;">
+            <div class="parsed-item" style="background:#FFF5F5; padding:6px 8px;">
+              <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">預估純日圓 (¥)</span>
+              <div id="it-budget-total-jpy" style="font-size:0.95rem; font-weight:800; color:var(--maple-crimson); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">¥ 0</div>
+            </div>
+            <div class="parsed-item" style="background:#F0FFF4; padding:6px 8px;">
+              <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">預估純台幣 ($)</span>
+              <div id="it-budget-total-twd-only" style="font-size:0.95rem; font-weight:800; color:#059669; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">NT$ 0</div>
+            </div>
+            <div class="parsed-item" style="background:#FFF9EF; padding:6px 8px;">
+              <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">折合台幣加總</span>
+              <div id="it-budget-total-twd" style="font-size:0.95rem; font-weight:800; color:var(--amber-gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">NT$ 0</div>
+            </div>
+          </div>
+          <div style="font-size:0.72rem; color:var(--kyoto-muted); line-height:1.4;">
+            💡 輸入 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">¥</code> 計入純日圓、輸入 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">$</code> 或 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">NT$</code> 計入純台幣，算式（如 1000*2）會自動計算。
+          </div>
+        </div>
+
         <!-- Expense Dashboard Overview Card -->
         <div class="kyoto-card">
           <div class="card-title-row">
@@ -472,7 +500,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">交通 / 備忘貼士</label>
-            <input type="text" id="hotel-notes" class="form-control" placeholder="例：地鐵烏丸御池站 6 號出口" />
+            <textarea id="hotel-notes" class="form-control" rows="3" placeholder="例：地鐵烏丸御池站 6 號出口" style="resize:vertical; min-height:72px;"></textarea>
           </div>
           <button type="submit" class="btn-primary" style="margin-top:10px;">儲存住宿資訊</button>
         </form>
@@ -524,7 +552,7 @@
             </div>
             <div class="form-group" style="flex:1;">
               <label class="form-label">預估費用 (JPY)</label>
-              <input type="number" id="it-cost" class="form-control" placeholder="1000" />
+              <input type="text" id="it-cost" class="form-control" placeholder="例：¥1000*2 或 $500" />
             </div>
           </div>
           <div class="form-group">
@@ -537,7 +565,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">備忘貼士</label>
-            <input type="text" id="it-note" class="form-control" placeholder="例：建議早起避開人潮" />
+            <textarea id="it-note" class="form-control" rows="3" placeholder="例：建議早起避開人潮" style="resize:vertical; min-height:72px;"></textarea>
           </div>
           <button type="submit" class="btn-primary" style="margin-top:10px;">儲存行程</button>
         </form>
