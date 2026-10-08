@@ -22,6 +22,8 @@ class FirebaseStorageManager {
     this.cloudBaseline = null;
     this.pendingWrites = Promise.resolve();
     this.onConflict = null;
+    this.localWritesPending = 0;
+    this.conflictDetected = false;
   }
 
   // Initialize Firebase with given config or default config
@@ -110,7 +112,8 @@ class FirebaseStorageManager {
       const cloudData = snapshot.val();
       this.cloudBaseline = cloudData;
       this.cloudReady = true;
-      if (cloudData && typeof cloudData === 'object' && onDataReceived) {
+      if (cloudData && typeof cloudData === 'object' && onDataReceived &&
+          this.localWritesPending === 0 && !this.conflictDetected) {
         onDataReceived(cloudData);
       } else {
         console.warn('Firebase cloud node is empty; automatic upload is disabled.');
@@ -128,12 +131,13 @@ class FirebaseStorageManager {
   // A transaction prevents a stale tab from silently replacing newer cloud data.
   // If another device has written since our last snapshot, abort rather than overwrite.
   saveDataToCloud(data) {
-    if (!this.isInitialized || !this.rtdbRef || !this.cloudReady) {
+    if (!this.isInitialized || !this.rtdbRef || !this.cloudReady || this.cloudBaseline === null || this.conflictDetected) {
       console.warn('Cloud not ready: changes kept locally, not uploaded.');
       return Promise.resolve(false);
     }
     const requestedData = JSON.parse(JSON.stringify(data));
     const expected = JSON.stringify(this.cloudBaseline);
+    this.localWritesPending += 1;
     const perform = async () => {
       try {
         const result = await this.rtdbRef.transaction(
@@ -143,6 +147,7 @@ class FirebaseStorageManager {
         );
         if (!result.committed) {
           this.lastError = '雲端資料已由其他裝置更新，這次儲存已停止以避免覆蓋。';
+          this.conflictDetected = true;
           console.warn(this.lastError);
           if (this.onConflict) this.onConflict(this.lastError);
           return false;
@@ -156,7 +161,8 @@ class FirebaseStorageManager {
         return false;
       }
     };
-    this.pendingWrites = this.pendingWrites.then(perform, perform);
+    const queued = () => perform().finally(() => { this.localWritesPending -= 1; });
+    this.pendingWrites = this.pendingWrites.then(queued, queued);
     return this.pendingWrites;
   }
 
