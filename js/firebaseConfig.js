@@ -4,7 +4,10 @@
  * https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app
  */
 
-window.FIREBASE_CONFIG_DEFAULT = null;
+window.FIREBASE_CONFIG_DEFAULT = {
+  projectId: 'kyoto-trip-2026-46dc0',
+  databaseURL: 'https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app'
+};
 
 class FirebaseStorageManager {
   constructor() {
@@ -15,6 +18,10 @@ class FirebaseStorageManager {
     this.syncEnabled = false; // Default to FALSE: protect cloud DB from local edits
     this.mode = 'rtdb'; // 'rtdb' or 'firestore'
     this.lastError = null;
+    this.cloudReady = false;
+    this.cloudBaseline = null;
+    this.pendingWrites = Promise.resolve();
+    this.onConflict = null;
   }
 
   // Initialize Firebase with given config or default config
@@ -23,7 +30,7 @@ class FirebaseStorageManager {
       console.log('📱 Local Storage Mode (Firebase SDK not loaded).');
       return false;
     }
-    const config = customConfig || this.getSavedConfig();
+    const config = customConfig || window.FIREBASE_CONFIG_DEFAULT || this.getSavedConfig();
     
     if (!config || (!config.projectId && !config.databaseURL)) {
       console.log('📱 Pure Local Storage Mode Active. Local edits will NOT affect cloud DB.');
@@ -47,6 +54,8 @@ class FirebaseStorageManager {
           this.mode = 'rtdb';
           this.isInitialized = true;
           this.syncEnabled = true;
+          this.cloudReady = false;
+          this.cloudBaseline = null;
           this.lastError = null;
           console.log('🔥 Firebase Realtime Database connected:', dbUrl);
           this.saveConfigLocally(config);
@@ -93,65 +102,64 @@ class FirebaseStorageManager {
     }
   }
 
-  // Subscribe to real-time updates from Cloud DB
+  // Subscribe before allowing any writes. Never seed an empty cloud automatically.
   subscribeRealtime(onDataReceived) {
-    if (!this.isInitialized) return null;
-
-    if (this.mode === 'rtdb' && this.rtdbRef) {
-      this.rtdbRef.on('value', (snapshot) => {
-        const cloudData = snapshot.val();
-        if (cloudData && typeof cloudData === 'object') {
-          console.log('🔥 Cloud DB data received:', cloudData);
-          if (onDataReceived) onDataReceived(cloudData);
-        } else {
-          console.log('🔥 Cloud DB node is empty. Checking local storage data...');
-          const localData = window.StorageManager.loadData();
-          if (localData) {
-            this.saveDataToCloud(localData);
-          }
-        }
-      }, (error) => {
-        console.error('🔥 Realtime DB Permission/Sync Error:', error);
-        this.lastError = error.message;
-        if (error.code === 'PERMISSION_DENIED') {
-          console.warn('⚠️ Firebase Realtime DB 安全規則拒絕存取！請至 Firebase Console 將規則設為 read:true, write:true');
-        }
-      });
-    } else if (this.mode === 'firestore' && this.docRef) {
-      this.docRef.onSnapshot((doc) => {
-        if (doc.exists) {
-          const cloudData = doc.data();
-          if (cloudData && onDataReceived) onDataReceived(cloudData);
-        } else {
-          const localData = window.StorageManager.loadData();
-          if (localData) this.saveDataToCloud(localData);
-        }
-      }, (error) => {
-        console.error('🔥 Firestore Error:', error);
-        this.lastError = error.message;
-      });
-    }
-  }
-
-  // Save data to Cloud Database
-  async saveDataToCloud(data) {
-    if (!this.isInitialized) return false;
-    try {
-      if (this.mode === 'rtdb' && this.rtdbRef) {
-        await this.rtdbRef.set(data);
-        console.log('🔥 Successfully saved to Firebase Realtime DB cloud!');
-        return true;
-      } else if (this.mode === 'firestore' && this.docRef) {
-        await this.docRef.set(data, { merge: true });
-        console.log('🔥 Successfully saved to Firestore cloud!');
-        return true;
+    if (!this.isInitialized || !this.rtdbRef) return null;
+    this.rtdbRef.off('value');
+    const onValue = (snapshot) => {
+      const cloudData = snapshot.val();
+      this.cloudBaseline = cloudData;
+      this.cloudReady = true;
+      if (cloudData && typeof cloudData === 'object' && onDataReceived) {
+        onDataReceived(cloudData);
+      } else {
+        console.warn('Firebase cloud node is empty; automatic upload is disabled.');
       }
-    } catch (err) {
-      console.error('🔥 Save to Cloud DB failed:', err);
-      this.lastError = err.message;
-      return false;
-    }
+    };
+    const onError = (error) => {
+      this.cloudReady = false;
+      this.lastError = error.message;
+      console.error('Firebase realtime sync failed:', error);
+    };
+    this.rtdbRef.on('value', onValue, onError);
+    return () => this.rtdbRef.off('value', onValue);
   }
+
+  // A transaction prevents a stale tab from silently replacing newer cloud data.
+  // If another device has written since our last snapshot, abort rather than overwrite.
+  saveDataToCloud(data) {
+    if (!this.isInitialized || !this.rtdbRef || !this.cloudReady) {
+      console.warn('Cloud not ready: changes kept locally, not uploaded.');
+      return Promise.resolve(false);
+    }
+    const requestedData = JSON.parse(JSON.stringify(data));
+    const expected = JSON.stringify(this.cloudBaseline);
+    const perform = async () => {
+      try {
+        const result = await this.rtdbRef.transaction(
+          (current) => JSON.stringify(current) === expected ? requestedData : undefined,
+          undefined,
+          false
+        );
+        if (!result.committed) {
+          this.lastError = '雲端資料已由其他裝置更新，這次儲存已停止以避免覆蓋。';
+          console.warn(this.lastError);
+          if (this.onConflict) this.onConflict(this.lastError);
+          return false;
+        }
+        this.cloudBaseline = result.snapshot.val();
+        this.lastError = null;
+        return true;
+      } catch (error) {
+        this.lastError = error.message;
+        console.error('Firebase save failed:', error);
+        return false;
+      }
+    };
+    this.pendingWrites = this.pendingWrites.then(perform, perform);
+    return this.pendingWrites;
+  }
+
 }
 
 window.FirebaseManager = new FirebaseStorageManager();
