@@ -25,6 +25,7 @@ class FirebaseStorageManager {
     this.localWritesPending = 0;
     this.conflictDetected = false;
     this.localEditsBeforeReady = false;
+    this.lastCloudVersion = null;
   }
 
   // Initialize Firebase with given config or default config
