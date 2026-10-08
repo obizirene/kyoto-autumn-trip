@@ -106,6 +106,27 @@ class FirebaseStorageManager {
     }
   }
 
+  // RTDB may normalize arrays to keyed objects and reorder object keys.
+  // Compare semantic JSON content rather than raw JSON serialization.
+  canonicalData(value) {
+    if (Array.isArray(value)) {
+      return value.map((item) => this.canonicalData(item));
+    }
+    if (value && typeof value === 'object') {
+      const keys = Object.keys(value).sort();
+      const normalized = {};
+      keys.forEach((key) => {
+        normalized[key] = this.canonicalData(value[key]);
+      });
+      return normalized;
+    }
+    return value;
+  }
+
+  sameData(a, b) {
+    return JSON.stringify(this.canonicalData(a)) === JSON.stringify(this.canonicalData(b));
+  }
+
   // Subscribe before allowing any writes. Never seed an empty cloud automatically.
   subscribeRealtime(onDataReceived) {
     if (!this.isInitialized || !this.rtdbRef) return null;
@@ -147,18 +168,18 @@ class FirebaseStorageManager {
     const requestedData = JSON.parse(JSON.stringify(data));
     this.localWritesPending += 1;
     const perform = async () => {
-      const expected = JSON.stringify(this.cloudBaseline);
+      const expected = JSON.parse(JSON.stringify(this.cloudBaseline));
       try {
         // Prime the local Firebase cache; otherwise the transaction may first see null.
-        const latest = await this.rtdbRef.get();
-        if (JSON.stringify(latest.val()) !== expected) {
+        const latest = await this.rtdbRef.once('value');
+        if (!this.sameData(latest.val(), expected)) {
           this.conflictDetected = true;
           this.lastError = '雲端資料已由其他裝置更新，這次儲存已停止以避免覆蓋。';
           if (this.onConflict) this.onConflict(this.lastError);
           return false;
         }
         const result = await this.rtdbRef.transaction(
-          (current) => JSON.stringify(current) === expected ? requestedData : undefined,
+          (current) => this.sameData(current, expected) ? requestedData : undefined,
           undefined,
           false
         );
