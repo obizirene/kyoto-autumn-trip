@@ -154,21 +154,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initFirebaseSync() {
-    if (window.FirebaseManager) {
-      const initialized = window.FirebaseManager.init();
-      if (initialized) {
-        window.FirebaseManager.subscribeRealtime((cloudData) => {
-          if (cloudData) {
-            tripData = cloudData;
-            localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(tripData));
-            renderAllViews();
-            if (currentLocationDetailId) {
-              renderLocationDetailModal(currentLocationDetailId);
-            }
-          }
-        });
-      }
-    }
+    if (!window.FirebaseManager) return;
+    const initialized = window.FirebaseManager.isInitialized || window.FirebaseManager.init();
+    if (!initialized) return;
+    window.FirebaseManager.onConflict = (message) => {
+      alert(message + '\n請先匯出 JSON 備份，再重新整理頁面以取得最新雲端資料。');
+    };
+    window.FirebaseManager.subscribeRealtime((cloudData) => {
+      if (!cloudData) return;
+      // Never replace a locally edited copy after a cloud write conflict.
+      if (window.FirebaseManager.lastError &&
+          window.FirebaseManager.lastError.includes('雲端資料已由其他裝置更新')) return;
+      tripData = cloudData;
+      localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(tripData));
+      renderAllViews();
+      if (currentLocationDetailId) renderLocationDetailModal(currentLocationDetailId);
+    });
   }
 
   function saveDataAndUpdate() {
@@ -1432,8 +1433,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // 完整覆蓋：先清空再設定，避免舊資料殘留
-      tripData.expenses = [];
-      window.StorageManager.saveData(tripData);
       tripData.expenses = parsedExpenses;
       saveDataAndUpdate();
       if (textInput) textInput.value = '';
@@ -1741,8 +1740,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const daySummary = Object.keys(dayCounts).sort((a, b) => +a - +b).map(d => `Day ${d}: ${dayCounts[d]} 筆`).join(', ');
 
       // 完整覆蓋：先清空再設定，避免舊資料殘留
-      tripData.itinerary = [];
-      window.StorageManager.saveData(tripData);
       tripData.itinerary = parsedItinerary;
       saveDataAndUpdate();
       if (textInput) textInput.value = '';
@@ -2868,9 +2865,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (textChanged) {
       window.StorageManager.saveData(tripData);
-      if (window.FirebaseManager && window.FirebaseManager.isInitialized) {
-        window.FirebaseManager.saveDataToCloud(tripData);
-      }
     }
   };
 
