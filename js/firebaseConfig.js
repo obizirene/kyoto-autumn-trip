@@ -24,6 +24,7 @@ class FirebaseStorageManager {
     this.onConflict = null;
     this.localWritesPending = 0;
     this.conflictDetected = false;
+    this.localEditsBeforeReady = false;
   }
 
   // Initialize Firebase with given config or default config
@@ -112,6 +113,12 @@ class FirebaseStorageManager {
       const cloudData = snapshot.val();
       if (this.localWritesPending === 0) this.cloudBaseline = cloudData;
       this.cloudReady = true;
+      if (this.localEditsBeforeReady) {
+        this.conflictDetected = true;
+        this.lastError = '連線前已有本機修改，為避免覆蓋資料，請先匯出 JSON 備份再重新整理。';
+        if (this.onConflict) this.onConflict(this.lastError);
+        this.localEditsBeforeReady = false;
+      }
       if (cloudData && typeof cloudData === 'object' && onDataReceived &&
           this.localWritesPending === 0 && !this.conflictDetected) {
         onDataReceived(cloudData);
@@ -132,6 +139,7 @@ class FirebaseStorageManager {
   // If another device has written since our last snapshot, abort rather than overwrite.
   saveDataToCloud(data) {
     if (!this.isInitialized || !this.rtdbRef || !this.cloudReady || this.cloudBaseline === null || this.conflictDetected) {
+      if (this.isInitialized && !this.cloudReady) this.localEditsBeforeReady = true;
       console.warn('Cloud not ready: changes kept locally, not uploaded.');
       return Promise.resolve(false);
     }
@@ -140,6 +148,14 @@ class FirebaseStorageManager {
     const perform = async () => {
       const expected = JSON.stringify(this.cloudBaseline);
       try {
+        // Prime the local Firebase cache; otherwise the transaction may first see null.
+        const latest = await this.rtdbRef.get();
+        if (JSON.stringify(latest.val()) !== expected) {
+          this.conflictDetected = true;
+          this.lastError = '雲端資料已由其他裝置更新，這次儲存已停止以避免覆蓋。';
+          if (this.onConflict) this.onConflict(this.lastError);
+          return false;
+        }
         const result = await this.rtdbRef.transaction(
           (current) => JSON.stringify(current) === expected ? requestedData : undefined,
           undefined,
