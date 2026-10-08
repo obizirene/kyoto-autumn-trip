@@ -157,50 +157,30 @@ class FirebaseStorageManager {
     return () => this.rtdbRef.off('value', onValue);
   }
 
-  // A transaction prevents a stale tab from silently replacing newer cloud data.
-  // If another device has written since our last snapshot, abort rather than overwrite.
+  // Last-write-wins mode, explicitly accepted by the owner.
   saveDataToCloud(data) {
-    if (!this.isInitialized || !this.rtdbRef || !this.cloudReady || this.cloudBaseline === null || this.conflictDetected) {
-      if (this.isInitialized && !this.cloudReady) this.localEditsBeforeReady = true;
-      console.warn('Cloud not ready: changes kept locally, not uploaded.');
+    if (!this.isInitialized || !this.rtdbRef || !this.cloudReady) {
+      console.warn('Cloud not ready; local data was saved only.');
       return Promise.resolve(false);
     }
     const requestedData = JSON.parse(JSON.stringify(data));
     this.localWritesPending += 1;
     const perform = async () => {
-      const expected = JSON.parse(JSON.stringify(this.cloudBaseline));
       try {
-        // Prime the local Firebase cache; otherwise the transaction may first see null.
-        const latest = await this.rtdbRef.once('value');
-        if (!this.sameData(latest.val(), expected)) {
-          this.conflictDetected = true;
-          this.lastError = '雲端資料已由其他裝置更新，這次儲存已停止以避免覆蓋。';
-          if (this.onConflict) this.onConflict(this.lastError);
-          return false;
-        }
-        const result = await this.rtdbRef.transaction(
-          (current) => this.sameData(current, expected) ? requestedData : undefined,
-          undefined,
-          false
-        );
-        if (!result.committed) {
-          this.lastError = '雲端資料已由其他裝置更新，這次儲存已停止以避免覆蓋。';
-          this.conflictDetected = true;
-          console.warn(this.lastError);
-          if (this.onConflict) this.onConflict(this.lastError);
-          return false;
-        }
-        this.cloudBaseline = result.snapshot.val();
+        await this.rtdbRef.set(requestedData);
+        this.cloudBaseline = requestedData;
         this.lastError = null;
         return true;
       } catch (error) {
         this.lastError = error.message;
         console.error('Firebase save failed:', error);
+        if (this.onConflict) this.onConflict('Firebase 儲存失敗：' + error.message);
         return false;
+      } finally {
+        this.localWritesPending -= 1;
       }
     };
-    const queued = () => perform().finally(() => { this.localWritesPending -= 1; });
-    this.pendingWrites = this.pendingWrites.then(queued, queued);
+    this.pendingWrites = this.pendingWrites.then(perform, perform);
     return this.pendingWrites;
   }
 
