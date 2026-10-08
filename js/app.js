@@ -14,11 +14,72 @@ document.addEventListener('DOMContentLoaded', () => {
   let tripData = window.StorageManager.loadData();
   let currentTab = 'flight';
   let currentDay = 1;
+  let selectedMapItemId = null;
   let currentItineraryCategory = 'all';
   let currentShoppingLocationCategory = 'all';
   let currentLocationDetailId = null;
   let isCardLimitsExpanded = false;
   let currentCardFilter = 'all';
+  let itineraryEditorBaseline = '';
+  let itineraryEditorOpen = false;
+
+  function itineraryEditorIsDesktop() {
+    return window.matchMedia('(min-width: 1024px)').matches;
+  }
+
+  function itineraryFormSignature() {
+    const form = document.getElementById('form-add-itinerary');
+    if (!form) return '';
+    return Array.from(form.elements).map(el => `${el.id}:${el.type === 'checkbox' ? el.checked : el.value}`).join('|');
+  }
+
+  function routeItineraryEditor(open) {
+    const modal = document.getElementById('modal-itinerary');
+    const host = document.getElementById('itinerary-edit-panel-host');
+    const sheet = (modal && modal.querySelector('.modal-sheet')) || (host && host.querySelector('.modal-sheet'));
+    if (!modal || !sheet || !host) return;
+    const mapPane = host.closest('.itinerary-map-pane');
+    if (open && itineraryEditorIsDesktop()) {
+      host.hidden = false;
+      mapPane?.classList.add('itinerary-map-pane--editing');
+      host.appendChild(sheet);
+      sheet.classList.add('itinerary-edit-panel');
+      modal.classList.remove('active');
+    } else {
+      mapPane?.classList.remove('itinerary-map-pane--editing');
+      modal.appendChild(sheet);
+      sheet.classList.remove('itinerary-edit-panel');
+      host.hidden = true;
+      if (open) modal.classList.add('active');
+      else modal.classList.remove('active');
+    }
+    itineraryEditorOpen = open;
+  }
+
+  function closeItineraryEditor(discardConfirmed = false) {
+    if (!itineraryEditorOpen) {
+      window.closeModal('modal-itinerary');
+      return true;
+    }
+    if (!discardConfirmed && itineraryEditorHasChanges() && !window.confirm('目前行程有尚未儲存的變更，確定離開嗎？')) return false;
+    routeItineraryEditor(false);
+    itineraryEditorBaseline = '';
+    return true;
+  }
+  window.closeItineraryEditor = closeItineraryEditor;
+
+  function itineraryEditorHasChanges() {
+    return Boolean(itineraryEditorBaseline && itineraryFormSignature() !== itineraryEditorBaseline);
+  }
+
+  function switchItineraryEditorRouteIfNeeded() {
+    if (!itineraryEditorOpen) return;
+    const desktop = itineraryEditorIsDesktop();
+    const inPanel = document.querySelector('#itinerary-edit-panel-host .modal-sheet');
+    if (desktop !== Boolean(inPanel)) routeItineraryEditor(true);
+  }
+
+  window.addEventListener('resize', switchItineraryEditorRouteIfNeeded);
 
   // Calendar State
   let calYear = 2026;
@@ -83,6 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initApp();
 
   function initApp() {
+    const itineraryAddButton = document.getElementById('add-itinerary-modal-btn');
+    if (itineraryAddButton) itineraryAddButton.innerHTML = itineraryOutlineIcon('add');
     renderAllViews();
     bindEvents();
     initCalendarPicker();
@@ -122,13 +185,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (expCategorySelect) {
       expCategorySelect.innerHTML = window.EXPENSE_CATEGORIES.map(c => `
-        <option value="${c.id}">${c.label}</option>
+        <option value="${c.id}">${window.uiCategoryText(c.id, c.label)}</option>
       `).join('');
     }
 
     if (itCategorySelect) {
       itCategorySelect.innerHTML = window.ITINERARY_CATEGORIES.map(c => `
-        <option value="${c.id}">${c.label}</option>
+        <option value="${c.id}">${window.uiCategoryText(c.id, c.label)}</option>
       `).join('');
     }
   }
@@ -318,10 +381,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (statusMsg) {
           if (window.FirebaseManager.isInitialized) {
             statusMsg.style.color = '#10B981';
-            statusMsg.innerText = '🟢 已成功連線至 Firebase Realtime DB / Firestore 雲端資料庫 (雙向即時同步中)';
+            window.uiSetIconText(statusMsg, "check", "已成功連線至 Firebase Realtime DB / Firestore 雲端資料庫 (雙向即時同步中)", "active");
           } else {
             statusMsg.style.color = 'var(--amber-gold)';
-            statusMsg.innerText = '🟡 目前為離線本機模式。填寫 Project ID 即可啟用雙機即時同步！';
+            window.uiSetIconText(statusMsg, "warning", "目前為離線本機模式。填寫 Project ID 即可啟用雙機即時同步！", "warning");
           }
         }
         openModal('modal-firebase-config');
@@ -479,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addHotelBtn = document.getElementById('add-hotel-btn');
     if (addHotelBtn) {
       addHotelBtn.addEventListener('click', () => {
-        document.getElementById('modal-hotel-title').innerText = '🏨 新增住宿';
+        window.uiSetIconText(document.getElementById("modal-hotel-title"), "bed", "新增住宿");
         document.getElementById('hotel-id').value = '';
         document.getElementById('form-hotel').reset();
         selCheckIn = '2026-11-20';
@@ -557,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. Manual Add / Edit Expense Modal
     window.openAddExpenseModal = function() {
       const titleEl = document.getElementById('modal-expense-title');
-      if (titleEl) titleEl.innerText = '💰 新增記帳項目';
+      window.uiSetIconText(titleEl, "wallet", "新增記帳項目");
       const expIdEl = document.getElementById('exp-id');
       if (expIdEl) expIdEl.value = '';
       const form = document.getElementById('form-add-expense');
@@ -621,6 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const addExpenseBtn = document.getElementById('add-expense-modal-btn');
     if (addExpenseBtn) {
+      window.uiSetIconText(addExpenseBtn, 'plus', '新增記帳');
       addExpenseBtn.addEventListener('click', window.openAddExpenseModal);
     }
 
@@ -645,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <option value="JPY" ${curVal === 'JPY' ? 'selected' : ''}>日圓 (¥)</option>
           <option value="TWD" ${curVal === 'TWD' ? 'selected' : ''}>台幣 ($)</option>
         </select>
-        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:1.1rem; padding:2px 6px; flex-shrink:0;" title="刪除此列">✕</button>
+        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:1.1rem; padding:2px 6px; flex-shrink:0;" title="刪除此列">${window.uiIcon("x", "danger")}</button>
       `;
 
       container.appendChild(rowDiv);
@@ -709,15 +773,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const addItineraryBtn = document.getElementById('add-itinerary-modal-btn');
     if (addItineraryBtn) {
       addItineraryBtn.addEventListener('click', () => {
+        if (itineraryEditorOpen && !closeItineraryEditor()) return;
         const titleEl = document.getElementById('modal-itinerary-title');
-        if (titleEl) titleEl.innerText = '🗓️ 新增行程景點';
+        window.uiSetIconText(titleEl, "calendar", "新增行程景點");
         document.getElementById('it-id').value = '';
         document.getElementById('form-add-itinerary').reset();
         document.getElementById('it-day').value = currentDay;
         document.getElementById('it-time-start').value = '09:00';
         document.getElementById('it-time-end').value = '11:30';
         window.populateItineraryCostRows(null);
-        openModal('modal-itinerary');
+        document.getElementById('itinerary-editor-context').hidden = true;
+        itineraryEditorBaseline = itineraryFormSignature();
+        routeItineraryEditor(true);
       });
     }
 
@@ -766,28 +833,93 @@ document.addEventListener('DOMContentLoaded', () => {
           tripData.itinerary.push(itemObj);
         }
 
-        closeModal('modal-itinerary');
+        tripData.itinerary = sortItineraryByStartTime(tripData.itinerary);
+
+        closeItineraryEditor(true);
         itineraryForm.reset();
         saveDataAndUpdate();
       });
     }
 
     // 9. Packing Checklist Add / Edit Item & Category Modals
-    const addPackingItemBtn = document.getElementById('add-packing-item-btn');
-    if (addPackingItemBtn) {
-      addPackingItemBtn.addEventListener('click', () => {
-        document.getElementById('modal-packing-item-title').innerText = '🎒 新增行李項目';
-        document.getElementById('edit-packing-item-id').value = '';
-        document.getElementById('form-add-packing-item').reset();
-
-        const select = document.getElementById('pk-item-category-select');
-        if (select) {
-          select.innerHTML = tripData.packing.map(cat => `
-            <option value="${cat.category}">${cat.category}</option>
-          `).join('');
+    window.openAddPackingItemModal = function(category) {
+      if (!tripData.packing.some(cat => cat.category === category)) return;
+      window.uiSetIconText(document.getElementById("modal-packing-item-title"), "luggage", "新增行李項目");
+      document.getElementById('form-add-packing-item').reset();
+      document.getElementById('edit-packing-item-id').value = '';
+      const select = document.getElementById('pk-item-category-select');
+      select.replaceChildren(...tripData.packing.map(cat => new Option(cat.category, cat.category)));
+      select.value = category;
+      select.disabled = true;
+      document.getElementById('pk-item-category-group').hidden = true;
+      document.getElementById('pk-item-context-category').hidden = false;
+      document.getElementById('pk-item-context-category-name').textContent = category;
+      document.getElementById('pk-item-submit').textContent = '新增';
+      openModal('modal-packing-item');
+    };
+    let packingInlineAdd = null;
+    function finishPackingInlineAdd(commit) {
+      const state = packingInlineAdd;
+      if (!state || state.finished) return;
+      state.finished = true;
+      packingInlineAdd = null;
+      const value = state.input.value.trim();
+      state.row.remove();
+      if (!commit || !value) return;
+      // Reuse the existing form submit handler and its item creation/save flow.
+      const form = document.getElementById('form-add-packing-item');
+      form.reset();
+      document.getElementById('edit-packing-item-id').value = '';
+      const select = document.getElementById('pk-item-category-select');
+      select.replaceChildren(...tripData.packing.map(cat => new Option(cat.category, cat.category)));
+      select.value = state.category;
+      document.getElementById('pk-item-name').value = value;
+      form.requestSubmit();
+    }
+    function startPackingInlineAdd(category) {
+      if (packingInlineAdd && packingInlineAdd.category === category) {
+        packingInlineAdd.input.focus();
+        return;
+      }
+      finishPackingInlineAdd(true);
+      const categoryElement = [...document.querySelectorAll('.packing-category')]
+        .find(el => el.dataset.category === category);
+      if (!categoryElement) return;
+      const row = document.createElement('div');
+      row.className = 'packing-inline-add-row';
+      row.draggable = false;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'packing-inline-add-input';
+      input.placeholder = '輸入行李項目名稱...';
+      input.setAttribute('aria-label', '新增行李項目名稱');
+      input.setAttribute('enterkeyhint', 'done');
+      row.append(input);
+      categoryElement.querySelector('.packing-add-item').before(row);
+      packingInlineAdd = { category, row, input, finished: false };
+      input.addEventListener('keydown', e => {
+        if (e.isComposing) return;
+        if (e.key === 'Enter' || e.key === 'Escape') {
+          e.preventDefault();
+          finishPackingInlineAdd(e.key === 'Enter');
         }
-        openModal('modal-packing-item');
       });
+      input.addEventListener('blur', () => finishPackingInlineAdd(true));
+      input.focus();
+      row.scrollIntoView({ block: 'nearest' });
+    }
+    const packingList = document.getElementById('packing-checklist-container');
+    if (packingList) {
+      const activate = e => {
+        const button = e.target.closest('.packing-add-item');
+        if (!button || !packingList.contains(button)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        startPackingInlineAdd(button.closest('.packing-category').dataset.category);
+      };
+      // Resolve the old input before blur can rerender and detach the clicked button.
+      packingList.addEventListener('pointerdown', activate);
+      packingList.addEventListener('click', activate);
     }
 
     const packingItemForm = document.getElementById('form-add-packing-item');
@@ -824,7 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addPackingCatBtn = document.getElementById('add-packing-cat-btn');
     if (addPackingCatBtn) {
       addPackingCatBtn.addEventListener('click', () => {
-        document.getElementById('modal-packing-cat-title').innerText = '📁 新增行李分類';
+        window.uiSetIconText(document.getElementById("modal-packing-cat-title"), "folder", "新增行李分類");
         document.getElementById('edit-packing-cat-old-name').value = '';
         document.getElementById('form-add-packing-cat').reset();
         openModal('modal-packing-cat');
@@ -863,7 +995,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     items.forEach(it => {
       const isSelected = (selectedItineraryId === it.id) ? 'selected' : '';
-      html += `<option value="${it.id}" ${isSelected}>[Day ${it.day}] ${it.title} (📍 ${it.location})</option>`;
+      html += `<option value="${it.id}" ${isSelected}>[Day ${it.day}] ${it.title} (${it.location})</option>`;
     });
 
     selectEl.innerHTML = html;
@@ -888,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 10. Add / Edit Shopping Location Entry
   window.openAddShoppingModal = function() {
-    document.getElementById('modal-shopping-title').innerText = '🛍️ 新增購物地點與商品';
+    window.uiSetIconText(document.getElementById("modal-shopping-title"), "shoppingBag", "新增購物地點與商品");
     document.getElementById('edit-shop-loc-id').value = '';
     document.getElementById('form-add-shopping').reset();
     if (window.populateItinerarySelectForShopping) window.populateItinerarySelectForShopping('');
@@ -1164,6 +1296,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal Close Buttons
     document.querySelectorAll('.close-modal').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.closest('#modal-itinerary') || btn.closest('#itinerary-edit-panel-host')) {
+          closeItineraryEditor();
+          return;
+        }
         const modal = btn.closest('.modal-overlay');
         if (modal) modal.classList.remove('active');
       });
@@ -1171,6 +1307,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function switchTab(tabName) {
+    if (itineraryEditorOpen && tabName !== 'itinerary') {
+      if (!closeItineraryEditor()) return;
+    }
     currentTab = tabName;
     tabButtons.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabName);
@@ -1184,8 +1323,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('google-sheet-expense-control-container');
     if (!container) return;
     container.innerHTML = `
-      <button onclick="window.openGoogleSheetExpenseModal()" class="btn-primary" style="width:100%; padding:11px 14px; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:12px; background:#10B981; font-weight:800; box-shadow:0 4px 12px rgba(16, 185, 129, 0.25);">
-        📋 貼上 CSV 同步記帳
+      <button onclick="window.openGoogleSheetExpenseModal()" class="btn-primary accounting-csv-action" style="width:100%; padding:11px 14px; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:12px;">
+        ${window.uiIcon("clipboard", "strong")} 貼上 CSV 同步記帳
       </button>
     `;
   }
@@ -1206,7 +1345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const btn = document.querySelector('#form-google-sheet-expense button[type="button"]');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ 正在讀取與解析記帳中...'; }
+    if (btn) { btn.disabled = true; window.uiSetIconText(btn, "clock", "正在讀取與解析記帳中..."); }
 
 
     function parseCSVGrid(text) {
@@ -1306,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('❌ 解析失敗：' + err.message);
       return false;
     } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = '⚡ 一鍵匯入記帳資料'; }
+      if (btn) { btn.disabled = false; window.uiSetIconText(btn, "download", "一鍵匯入記帳資料"); }
     }
   };
 
@@ -1314,8 +1453,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('google-sheet-itinerary-control-container');
     if (!container) return;
     container.innerHTML = `
-      <button onclick="window.openGoogleSheetItineraryModal()" class="btn-primary" style="width:100%; padding:11px 14px; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:12px; background:#10B981; font-weight:800; box-shadow:0 4px 12px rgba(16,185,129,0.25);">
-        📋 貼上 CSV 同步行程
+      <button onclick="window.openGoogleSheetItineraryModal()" class="btn-primary" style="width:100%; padding:11px 14px; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:12px; background:var(--ui-selected); color:var(--ui-accent-text); border:1px solid var(--ui-selected-border); font-weight:500; box-shadow:none;">
+        ${window.uiIcon("clipboard", "muted")} 貼上 CSV 同步行程
       </button>
     `;
   }
@@ -1359,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cards = getCardsList();
     const existing = cardId ? cards.find(c => c.id === cardId) : null;
 
-    document.getElementById('card-form-title').innerText = existing ? '✏️ 編輯信用卡' : '➕ 新增信用卡';
+    window.uiSetIconText(document.getElementById("card-form-title"), existing ? "pencil" : "plus", existing ? "編輯信用卡" : "新增信用卡");
     document.getElementById('card-edit-id').value = existing ? existing.id : '';
     document.getElementById('card-edit-owner').value = existing ? existing.owner : '❤️';
     document.getElementById('card-edit-name').value = existing ? existing.name : '';
@@ -1451,23 +1590,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     container.innerHTML = filtered.map(card => {
-      const ownerBadge = card.owner === '❤️' ? '<span class="badge badge-spot" style="font-size:0.7rem;">❤️ 我</span>' :
-                         card.owner === '🐷' ? '<span class="badge badge-meal" style="font-size:0.7rem;">🐷 老公</span>' :
+      const ownerBadge = card.owner === '❤️' ? `<span class="badge badge-spot" style="font-size:0.7rem;">${window.uiIcon("user", "muted")} 我</span>` :
+                         card.owner === '🐷' ? `<span class="badge badge-meal" style="font-size:0.7rem;">${window.uiIcon("circleUserRound", "muted")} 老公</span>` :
                          '<span class="badge badge-transport" style="font-size:0.7rem;">通用</span>';
       const limitText = card.limit > 0 ? `NT$ ${card.limit.toLocaleString()}` : '<span style="color:var(--kyoto-muted);">無上限</span>';
 
       return `
-        <div style="display:flex; align-items:center; justify-content:space-between; background:#FFF; padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); gap:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; background:var(--ui-surface); padding:10px 12px; border-radius:10px; border:1px solid var(--ui-border); gap:10px;">
           <div style="display:flex; align-items:center; gap:8px;">
             ${ownerBadge}
-            <span style="font-weight:700; font-size:0.88rem; color:var(--kyoto-dark);">${card.name}</span>
+            <span style="font-weight:600; font-size:0.88rem; color:var(--ui-text);">${card.name}</span>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <div style="font-size:0.8rem; font-weight:700; color:var(--maple-crimson); text-align:right;">
+            <div style="font-size:0.8rem; font-weight:600; color:var(--ui-accent-text); text-align:right;">
               <span style="font-size:0.68rem; color:var(--kyoto-muted); font-weight:normal;">上限:</span> ${limitText}
             </div>
-            <button type="button" onclick="window.toggleAddCardForm(true, '${card.id}')" style="background:none; border:none; color:var(--kyoto-muted); cursor:pointer; font-size:0.85rem;" title="編輯">✏️</button>
-            <button type="button" onclick="window.deleteCardItem('${card.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除">🗑️</button>
+            <button type="button" onclick="window.toggleAddCardForm(true, '${card.id}')" style="background:none; border:none; color:var(--kyoto-muted); cursor:pointer; font-size:0.85rem;" title="編輯">${window.uiIcon("pencil", "muted")}</button>
+            <button type="button" onclick="window.deleteCardItem('${card.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除">${window.uiIcon("trash", "danger")}</button>
           </div>
         </div>
       `;
@@ -1492,7 +1631,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const btn = document.querySelector('#form-google-sheet-itinerary button[type="button"]');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ 正在讀取與解析行程中...'; }
+    if (btn) { btn.disabled = true; window.uiSetIconText(btn, "clock", "正在讀取與解析行程中..."); }
 
     function parseCSVGrid(text) {
       if (!text) return [];
@@ -1615,7 +1754,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('❌ 解析失敗：' + err.message);
       return false;
     } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = '⚡ 一鍵匯入全 10 天行程'; }
+      if (btn) { btn.disabled = false; window.uiSetIconText(btn, "download", "一鍵匯入全 10 天行程"); }
     }
   };
 
@@ -1665,21 +1804,21 @@ document.addEventListener('DOMContentLoaded', () => {
       outboundContainer.innerHTML = `
         <div class="kyoto-card" onclick="editFlight('outbound')" style="cursor:pointer;" title="點擊編輯去程航班">
           <div class="card-title-row">
-            <div class="card-title">✈️ 去程航班 (${out.date})</div>
+            <div class="card-title">${window.uiIcon("plane", "travel")} 去程航班 (${out.date})</div>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin: 12px 0;">
-            <div>
-              <div style="font-size:1.3rem; font-weight:800; color:var(--maple-crimson);">${out.depTime}</div>
-              <div style="font-size:0.85rem; font-weight:700;">${out.depAirport}</div>
+          <div class="flight-schedule" style="display:flex; justify-content:space-between; align-items:center; margin: 12px 0;">
+            <div class="flight-endpoint">
+              <div class="flight-time">${out.depTime}</div>
+              <div class="flight-airport">${out.depAirport}</div>
             </div>
-            <div style="text-align:center; color:var(--amber-gold);">
-              <div style="font-size:0.75rem; font-weight:700;">${out.airline}</div>
-              <div style="font-size:1.1rem;">✈️ ➔</div>
-              <div style="font-size:0.78rem; font-weight:800;">${outFlightCode}</div>
+            <div class="flight-airline" style="text-align:center;">
+              <div class="flight-airline-name">${out.airline}</div>
+              <div class="flight-direction" style="font-size:1.1rem;">${window.uiIcon("plane", "travel")} ➔</div>
+              <div class="flight-number">${outFlightCode}</div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-size:1.3rem; font-weight:800; color:var(--maple-crimson);">${out.arrTime}</div>
-              <div style="font-size:0.85rem; font-weight:700;">${out.arrAirport}</div>
+            <div class="flight-endpoint" style="text-align:right;">
+              <div class="flight-time">${out.arrTime}</div>
+              <div class="flight-airport">${out.arrAirport}</div>
             </div>
           </div>
         </div>
@@ -1690,21 +1829,21 @@ document.addEventListener('DOMContentLoaded', () => {
       inboundContainer.innerHTML = `
         <div class="kyoto-card" onclick="editFlight('inbound')" style="cursor:pointer;" title="點擊編輯回程航班">
           <div class="card-title-row">
-            <div class="card-title">🛬 回程航班 (${inb.date})</div>
+            <div class="card-title">${window.uiIcon("plane", "travel")} 回程航班 (${inb.date})</div>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin: 12px 0;">
-            <div>
-              <div style="font-size:1.3rem; font-weight:800; color:var(--kyoto-dark);">${inb.depTime}</div>
-              <div style="font-size:0.85rem; font-weight:700;">${inb.depAirport}</div>
+          <div class="flight-schedule" style="display:flex; justify-content:space-between; align-items:center; margin: 12px 0;">
+            <div class="flight-endpoint">
+              <div class="flight-time">${inb.depTime}</div>
+              <div class="flight-airport">${inb.depAirport}</div>
             </div>
-            <div style="text-align:center; color:var(--amber-gold);">
-              <div style="font-size:0.75rem; font-weight:700;">${inb.airline}</div>
-              <div style="font-size:1.1rem;">✈️ ➔</div>
-              <div style="font-size:0.78rem; font-weight:800;">${inbFlightCode}</div>
+            <div class="flight-airline" style="text-align:center;">
+              <div class="flight-airline-name">${inb.airline}</div>
+              <div class="flight-direction" style="font-size:1.1rem;">${window.uiIcon("plane", "travel")} ➔</div>
+              <div class="flight-number">${inbFlightCode}</div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-size:1.3rem; font-weight:800; color:var(--kyoto-dark);">${inb.arrTime}</div>
-              <div style="font-size:0.85rem; font-weight:700;">${inb.arrAirport}</div>
+            <div class="flight-endpoint" style="text-align:right;">
+              <div class="flight-time">${inb.arrTime}</div>
+              <div class="flight-airport">${inb.arrAirport}</div>
             </div>
           </div>
         </div>
@@ -1716,7 +1855,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fObj = type === 'outbound' ? tripData.flightInfo.outbound : tripData.flightInfo.inbound;
     if (!fObj) return;
 
-    document.getElementById('modal-flight-title').innerText = type === 'outbound' ? '✈️ 編輯去程航班資訊' : '🛬 編輯回程航班資訊';
+    window.uiSetIconText(document.getElementById("modal-flight-title"), "plane", type === "outbound" ? "編輯去程航班資訊" : "編輯回程航班資訊");
     document.getElementById('flight-type').value = type;
     document.getElementById('fl-date').value = fObj.date || '';
     document.getElementById('fl-airline').value = fObj.airline || '';
@@ -1757,13 +1896,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return `
         <div class="kyoto-card" onclick="editHotel('${h.id}')" style="cursor:pointer; margin-bottom:14px;" title="點擊編輯住宿資訊">
           <div class="card-title-row">
-            <div style="font-size:1.05rem; font-weight:800; color:var(--kyoto-dark);">${h.name}</div>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <a href="${mapsLink}" target="_blank" onclick="event.stopPropagation();" class="btn-icon-sm" style="text-decoration:none; font-size:1.05rem;" title="開啟 Google 地圖導航">🗺️</a>
-              <button onclick="event.stopPropagation(); deleteHotel('${h.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除住宿">🗑️</button>
+            <div class="hotel-name" style="font-size:1.05rem;">${h.name}</div>
+            <div class="hotel-actions" style="display:flex; gap:8px; align-items:center;">
+              <a href="${mapsLink}" target="_blank" onclick="event.stopPropagation();" class="btn-icon-sm" style="text-decoration:none; font-size:1.05rem;" title="開啟 Google 地圖導航">${window.uiIcon("map", "travel")}</a>
+              <button onclick="event.stopPropagation(); deleteHotel('${h.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除住宿">${window.uiIcon("trash", "danger")}</button>
             </div>
           </div>
-          ${h.notes ? `<div style="font-size:0.78rem; color:var(--amber-gold); margin-bottom:10px; background:var(--washi-bg); padding:6px 10px; border-radius:8px; white-space:pre-wrap; word-break:break-word; line-height:1.45;">💡 ${h.notes}</div>` : ''}
+          ${h.notes ? `<div class="hotel-note" style="font-size:0.78rem; margin-bottom:10px; padding:6px 10px; border-radius:8px; white-space:pre-wrap;">${window.uiIcon("lightbulb", "muted")} ${h.notes}</div>` : ''}
           <div class="parsed-grid">
             <div class="parsed-item"><span class="parsed-label">入住 Check-in</span><div class="parsed-val">${h.checkIn || '-'}</div></div>
             <div class="parsed-item"><span class="parsed-label">退房 Check-out${stayNightsText}</span><div class="parsed-val">${h.checkOut || '-'}</div></div>
@@ -1777,7 +1916,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const h = tripData.hotels.find(item => item.id === id);
     if (!h) return;
 
-    document.getElementById('modal-hotel-title').innerText = '🏨 編輯住宿資訊';
+    window.uiSetIconText(document.getElementById("modal-hotel-title"), "bed", "編輯住宿資訊");
     document.getElementById('hotel-id').value = h.id;
     document.getElementById('hotel-name').value = h.name || '';
     
@@ -1800,75 +1939,86 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   function parseCostExpressionAndCurrency(val) {
-    if (typeof val === 'number') return { amount: isNaN(val) ? 0 : val, currency: 'JPY' };
-    if (!val) return { amount: 0, currency: 'JPY' };
-    let str = String(val).trim();
-    if (!str) return { amount: 0, currency: 'JPY' };
-
-    let currency = 'JPY';
-    if (str.includes('$') || str.toUpperCase().includes('NT') || str.toUpperCase().includes('TWD') || str.includes('台幣')) {
-      currency = 'TWD';
+    const str = val == null ? '' : String(val).trim();
+    const currency = (str.includes('$') || /NT|TWD/i.test(str) || str.includes('台幣')) ? 'TWD' : 'JPY';
+    if (typeof val === 'number') return { amount: Number.isFinite(val) ? val : 0, currency: 'JPY', valid: Number.isFinite(val) };
+    if (!str) return { amount: 0, currency, valid: true };
+    // Strip recognized currency wrappers only; never discard unknown characters.
+    let expression = str.replace(/^(?:(?:NT\$|TWD|NT|JPY|[¥￥$]|台幣|日圓|日幣|円)\s*)+/i, '')
+      .replace(/\s*(?:TWD|NT|JPY|台幣|日圓|日幣|円|[¥￥$])$/i, '').trim();
+    expression = expression.replace(/\d{1,3}(?:,\d{3})+(?:\.\d+)?/g, (number, offset, text) => {
+      const before = text[offset - 1], after = text[offset + number.length];
+      return (before && /[\d.,]/.test(before)) || (after && /[\d.,]/.test(after)) ? number : number.replace(/,/g, '');
+    });
+    let position = 0, depth = 0;
+    function skipSpace() { while (/\s/.test(expression[position] || '') && position < expression.length) position++; }
+    function finite(value) { if (!Number.isFinite(value)) throw Error('Non-finite amount'); return value; }
+    function primary() {
+      skipSpace();
+      if (++depth > 100) throw Error('Expression too deep');
+      let value;
+      const char = expression[position];
+      if (char === '+' || char === '-') {
+        position++;
+        value = (char === '-' ? -1 : 1) * primary();
+      } else if (char === '(') {
+        position++;
+        value = sum();
+        skipSpace();
+        if (expression[position++] !== ')') throw Error('Unmatched parenthesis');
+      } else {
+        const match = /^(?:\d+(?:\.\d*)?|\.\d+)/.exec(expression.slice(position));
+        if (!match) throw Error('Missing operand');
+        position += match[0].length;
+        value = Number(match[0]);
+      }
+      depth--;
+      return finite(value);
     }
-
-    let amount = 0;
-    if (str.includes('*') || str.includes('+') || str.includes('/') || str.includes('-')) {
-      try {
-        let expr = str.replace(/[^\d*+./-]/g, '').trim();
-        if (expr && /^[0-9. \t*+-]+$/.test(expr)) {
-          const calculated = Function('"use strict";return (' + expr + ')')();
-          if (typeof calculated === 'number' && !isNaN(calculated) && isFinite(calculated)) {
-            amount = calculated;
-          }
-        }
-      } catch (err) {}
+    function product() {
+      let value = primary();
+      while (true) {
+        skipSpace();
+        const operator = expression[position];
+        if (operator !== '*' && operator !== '/') return value;
+        position++;
+        const right = primary();
+        if (operator === '/' && right === 0) throw Error('Division by zero');
+        value = finite(operator === '*' ? value * right : value / right);
+      }
     }
-
-    if (amount === 0) {
-      const cleanNumStr = str.replace(/[^0-9.]/g, '');
-      const num = parseFloat(cleanNumStr);
-      amount = isNaN(num) ? 0 : num;
+    function sum() {
+      let value = product();
+      while (true) {
+        skipSpace();
+        const operator = expression[position];
+        if (operator !== '+' && operator !== '-') return value;
+        position++;
+        const right = product();
+        value = finite(operator === '+' ? value + right : value - right);
+      }
     }
-
-    return { amount, currency };
+    try {
+      if (expression.length > 2000) throw Error('Expression too long');
+      const amount = sum();
+      skipSpace();
+      if (position !== expression.length) throw Error('Invalid amount character');
+      return { amount, currency, valid: true };
+    } catch (error) {
+      return { amount: 0, currency, valid: false };
+    }
   }
 
   function splitMultiCostItems(rawStr) {
     if (!rawStr) return [];
-    let str = String(rawStr).trim();
-    if (!str) return [];
-
-    const result = [];
-    // Match pattern: Group 1 = Name, Group 2 = Amount expression
-    // e.g. "關西機場 ➡︎ 京都 ( Haruka )：$406*2" or "京都 ➡︎ 二條 ( JR ): 180 *2"
-    const itemRegex = /([^\n\r|:：]+)[:：]\s*([\$¥]?[NTtwdTWD]*\s*[\d. \t*+-]+)/g;
-    let match;
-
-    while ((match = itemRegex.exec(str)) !== null) {
-      const name = match[1].trim();
-      const amountStr = match[2].trim();
-      if (amountStr) {
-        result.push({ name, amountStr, rawPart: match[0] });
-      }
-    }
-
-    // Fallback: If no colon-based item matched, split by newline/pipe and treat as non-named amounts
-    if (result.length === 0) {
-      const parts = str.split(/[\n\r|]+/);
-      parts.forEach(part => {
-        part = part.trim();
-        if (!part) return;
-        let name = '';
-        let amountStr = part;
-        if (part.includes(':') || part.includes('：')) {
-          const colonIdx = part.includes(':') ? part.indexOf(':') : part.indexOf('：');
-          name = part.slice(0, colonIdx).trim();
-          amountStr = part.slice(colonIdx + 1).trim();
-        }
-        result.push({ name, amountStr, rawPart: part });
-      });
-    }
-
-    return result;
+    // Existing newline/pipe delimiters separate costs; preserve the full expression.
+    return String(rawStr).trim().split(/[\n\r|]+/).map(part => {
+      part = part.trim();
+      const colon = part.search(/[:：]/);
+      return colon < 0 ? { name: '', amountStr: part, rawPart: part } : {
+        name: part.slice(0, colon).trim(), amountStr: part.slice(colon + 1).trim(), rawPart: part
+      };
+    }).filter(part => part.amountStr);
   }
 
   function getItemBudgetTotals(item) {
@@ -1918,11 +2068,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let detailsHtml = '';
     if (itemDetails.length > 0) {
-      detailsHtml = `<div style="font-size:0.75rem; color:var(--kyoto-muted); font-weight:normal; margin-top:3px; display:flex; flex-direction:column; gap:2px;">` +
+      detailsHtml = `<div class="itinerary-cost-detail" style="font-size:0.75rem; margin-top:3px; display:flex; flex-direction:column; gap:2px;">` +
         itemDetails.map(i => {
           const label = i.name ? `${i.name}: ` : '';
-          const symbol = i.currency === 'TWD' ? 'NT$' : '¥';
-          return `<div>• ${label}${symbol}${i.rawAmount}</div>`;
+          const symbol = i.currency === 'TWD' ? '$' : '¥';
+          return `<div>• ${label}${symbol}${i.amount.toLocaleString()}</div>`;
         }).join('') +
         `</div>`;
     }
@@ -2025,30 +2175,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const remaining = limit > 0 ? Math.max(0, limit - used) : null;
         const pct = limit > 0 ? Math.min(100, Math.round(used / limit * 100)) : null;
-        const barColor = pct >= 100 ? '#DC2626' : pct >= 80 ? '#F59E0B' : '#10B981';
-        const ownerBadge = card.owner === '❤️' ? '❤️ ' : card.owner === '🐷' ? '🐷 ' : '';
+        const barColor = pct >= 100 ? 'var(--ui-icon-warning)' : pct >= 80 ? 'var(--ui-autumn)' : 'var(--ui-accent)';
+        const ownerBadge = card.owner === '❤️' ? window.uiOwnerPresentation('❤️') + ' ' : card.owner === '🐷' ? window.uiOwnerPresentation('🐷') + ' ' : '';
 
         return `
-          <div style="background:#F8FAF8; border-radius:8px; padding:8px 10px;">
+          <div style="background:var(--ui-background); border-radius:8px; padding:8px 10px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-              <span style="font-size:0.8rem; font-weight:700; color:var(--kyoto-dark);">💳 ${ownerBadge}${card.name}</span>
+              <span style="font-size:0.8rem; font-weight:500; color:var(--ui-text);">${window.uiIcon("creditCard", "muted")} ${ownerBadge}${card.name}</span>
               <span style="font-size:0.78rem; color:var(--kyoto-muted);">
                 已刷 <b style="color:var(--maple-crimson);">NT$ ${used.toLocaleString()}</b>
                 ${limit > 0 ? ` / 上限 NT$ ${limit.toLocaleString()}` : ' (無上限)'}
               </span>
             </div>
             ${limit > 0 ? `
-              <div style="background:#E5E7EB; border-radius:4px; height:6px; overflow:hidden;">
+              <div style="background:var(--ui-border); border-radius:4px; height:6px; overflow:hidden;">
                 <div style="width:${pct}%; height:100%; background:${barColor}; transition:width 0.4s;"></div>
               </div>
-              <div style="font-size:0.72rem; color:${remaining===0?'#DC2626':'#059669'}; margin-top:3px; text-align:right;">
-                ${remaining === 0 ? '⚠️ 已達回饋上限' : `剩餘回饋額度 NT$ ${remaining.toLocaleString()}`}
+              <div style="font-size:0.72rem; color:${remaining===0?'var(--ui-icon-warning)':'var(--ui-muted)'}; margin-top:3px; text-align:right;">
+                ${remaining === 0 ? window.uiIcon("warning", "warning") + " 已達回饋上限" : `剩餘回饋額度 NT$ ${remaining.toLocaleString()}`}
               </div>` : ''}
           </div>`;
       }).filter(Boolean);
 
       if (cardRows.length === 0) {
-        cardLimitsContainer.innerHTML = '<div style="font-size:0.75rem;color:var(--kyoto-muted);">點擊右上方「⚙️ 管理卡片與額度」來設定信用卡！</div>';
+        cardLimitsContainer.innerHTML = `<div style="font-size:0.75rem;color:var(--kyoto-muted);">點擊右上方「${window.uiIcon("settings", "muted")} 管理卡片與額度」來設定信用卡！</div>`;
       } else {
         cardLimitsContainer.innerHTML = cardRows.join('');
       }
@@ -2071,26 +2221,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return `
         <div class="kyoto-card" onclick="editExpense('${exp.id}')" style="padding:14px 16px; margin-bottom:10px; cursor:pointer;" title="點擊編輯記帳">
           <div class="flex-between" style="margin-bottom:6px; align-items:flex-start; gap:10px;">
-            <div style="font-weight:700; font-size:0.92rem; color:var(--kyoto-dark); flex:1; min-width:0; word-break:break-word; line-height:1.35;">${exp.title}</div>
-            <div style="font-weight:800; font-size:1.05rem; color:var(--maple-crimson); white-space:nowrap; flex-shrink:0; text-align:right;">${displayAmount}</div>
+            <div class="accounting-history-title" style="font-size:0.92rem; flex:1; min-width:0; word-break:break-word; line-height:1.35;">${exp.title}</div>
+            <div class="accounting-amount" style="font-size:1.05rem; white-space:nowrap; flex-shrink:0; text-align:right;">${displayAmount}</div>
           </div>
           <div class="flex-between" style="gap:8px; align-items:center; margin-bottom:6px;">
             <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
               <span class="badge badge-spot" style="font-size:0.7rem;">${exp.category}</span>
               <span class="badge badge-transport" style="font-size:0.7rem;">${exp.card}</span>
-              <span class="badge badge-meal" style="font-size:0.78rem;">${payerEmoji}</span>
+              <span class="badge badge-meal" style="font-size:0.78rem;">${window.uiOwnerPresentation(payerEmoji)}</span>
             </div>
             <div style="font-size:0.72rem; color:var(--kyoto-muted); white-space:nowrap; flex-shrink:0;">${equivTWD}</div>
           </div>
-          ${exp.note ? `
-            <div style="font-size:0.75rem; color:var(--kyoto-muted); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:6px; border-left:3px solid var(--amber-gold);" title="${exp.note.replace(/"/g, '&quot;')}">
-              📝 ${exp.note}
-            </div>
-          ` : ''}
+          ${exp.note ? `<div class="expense-note" style="font-size:0.75rem; color:var(--kyoto-muted); margin-bottom:6px; background:var(--ui-background); padding:4px 8px; border-radius:6px; border-left:3px solid var(--ui-autumn);" title="${exp.note.replace(/"/g, '&quot;')}">${window.uiIcon("notebook", "muted")}<span class="expense-note-text">${exp.note}</span></div>` : ''}
           <div class="flex-between" style="font-size:0.72rem; color:var(--kyoto-muted);">
             <div>${exp.date}</div>
             <div style="display:flex; gap:6px; align-items:center;">
-              <button onclick="event.stopPropagation(); deleteExpense('${exp.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除記帳">🗑️</button>
+              <button onclick="event.stopPropagation(); deleteExpense('${exp.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除記帳">${window.uiIcon("trash", "danger")}</button>
             </div>
           </div>
         </div>
@@ -2102,7 +2248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const exp = tripData.expenses.find(e => e.id === id);
     if (!exp) return;
 
-    document.getElementById('modal-expense-title').innerText = '💰 編輯記帳項目';
+    window.uiSetIconText(document.getElementById("modal-expense-title"), "wallet", "編輯記帳項目");
     document.getElementById('exp-id').value = exp.id;
     document.getElementById('exp-title').value = exp.title || '';
     document.getElementById('exp-amount').value = exp.amount || '';
@@ -2137,7 +2283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     previewBox.innerHTML = `
       <div class="parsed-preview-box">
-        <div style="font-size:0.85rem; font-weight:800; color:var(--maple-crimson); margin-bottom:8px;">✨ 辨識成功！您可以即時調整下方欄位：</div>
+        <div style="font-size:0.85rem; font-weight:500; color:var(--ui-accent-text); margin-bottom:8px;">${window.uiIcon("check", "active")} 辨識成功！您可以即時調整下方欄位：</div>
         
         <div class="form-group" style="margin-bottom:6px;">
           <label class="parsed-label">名稱</label>
@@ -2168,8 +2314,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="form-group" style="flex:1; margin:0;">
             <label class="parsed-label">付款人</label>
             <select id="edit-nlp-payer" class="form-control" style="padding:6px; font-size:0.82rem;">
-              <option value="❤️" ${parsed.payer === '❤️' ? 'selected' : ''}>❤️ 我</option>
-              <option value="🐷" ${parsed.payer === '🐷' ? 'selected' : ''}>🐷 老公</option>
+              <option value="❤️" ${parsed.payer === '❤️' ? 'selected' : ''}>我</option>
+              <option value="🐷" ${parsed.payer === '🐷' ? 'selected' : ''}>老公</option>
             </select>
           </div>
         </div>
@@ -2181,8 +2327,13 @@ document.addEventListener('DOMContentLoaded', () => {
           </select>
         </div>
 
+        <div class="form-group">
+          <label class="parsed-label" for="edit-nlp-note">備註（選填）</label>
+          <textarea id="edit-nlp-note" class="form-control" rows="2">${String(parsed.note || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+        </div>
+
         <div style="display:flex; gap:8px;">
-          <button id="confirm-nlp-btn" class="btn-primary" style="padding:8px; font-size:0.82rem;">✅ 一鍵寫入記帳</button>
+          <button id="confirm-nlp-btn" class="btn-primary" style="padding:8px; font-size:0.82rem;">${window.uiIcon("check", "active")} 一鍵寫入記帳</button>
           <button id="cancel-nlp-btn" class="btn-secondary" style="padding:8px; font-size:0.82rem;">取消</button>
         </div>
       </div>
@@ -2195,6 +2346,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const finalCategory = document.getElementById('edit-nlp-category').value;
       const finalPayer = document.getElementById('edit-nlp-payer').value;
       const finalCard = document.getElementById('edit-nlp-card').value;
+      const finalNote = document.getElementById('edit-nlp-note').value;
 
       tripData.expenses.unshift({
         id: 'exp-' + Date.now(),
@@ -2205,7 +2357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currency: finalCurrency,
         card: finalCard,
         payer: finalPayer,
-        note: '自然語言記入'
+        note: finalNote
       });
       previewBox.innerHTML = '';
       document.getElementById('nlp-expense-input').value = '';
@@ -2218,6 +2370,83 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 4. Render Day-by-Day Itinerary
+  // Keep the map aligned with the selected day and category without changing trip data.
+
+  function itineraryOutlineIcon(name) {
+    return window.uiIcon(name === "edit" ? "pencil" : "plus", "inherit", "itinerary-outline-icon");
+  }
+
+  function itineraryMapText(value) {
+    if (typeof value !== 'string') return '';
+    const text = value.trim();
+    return text === 'undefined' || text === 'null' ? '' : text;
+  }
+
+  function itineraryMapQuery(item) {
+    if (!item) return '';
+    try {
+      const url = new URL(item.mapsUrl);
+      if ((url.protocol === 'https:' || url.protocol === 'http:') &&
+          /(^|\.)google\.(com|co\.jp)$/.test(url.hostname)) {
+        const query = itineraryMapText(url.searchParams.get('q')) || itineraryMapText(url.searchParams.get('query'));
+        if (query) return query;
+      }
+    } catch (_) { /* Invalid URLs fall back to existing place fields. */ }
+    return itineraryMapText(item.location) || itineraryMapText(item.locationName) || itineraryMapText(item.title);
+  }
+
+  function syncItineraryCardSelection() {
+    document.querySelectorAll('#itinerary-timeline-container .timeline-card').forEach(card => {
+      card.classList.toggle('is-selected', String(card.dataset.itId) === selectedMapItemId);
+    });
+  }
+
+  function renderItineraryMap(items) {
+    const select = document.getElementById('itinerary-map-select');
+    const frame = document.getElementById('itinerary-map-frame');
+    const caption = document.getElementById('itinerary-map-caption');
+    const link = document.getElementById('itinerary-map-link');
+    if (!select || !frame || !caption || !link) return;
+    select.replaceChildren();
+    items.forEach(item => {
+      const option = document.createElement('option');
+      option.value = String(item.id);
+      option.textContent = `${item.time || ''} ${item.location || item.title || '行程地點'}`.trim();
+      select.appendChild(option);
+    });
+    if (!items.some(item => String(item.id) === selectedMapItemId)) {
+      selectedMapItemId = items.length ? String(items[0].id) : null;
+    }
+    select.disabled = items.length === 0;
+    if (!items.length) {
+      const option = document.createElement('option');
+      option.textContent = '此日尚無符合篩選的行程';
+      select.appendChild(option);
+    }
+    function updateMap() {
+      const item = items.find(entry => String(entry.id) === selectedMapItemId);
+      const placeQuery = itineraryMapQuery(item);
+      const query = placeQuery || '京都 日本';
+      let externalUrl = '';
+      if (item && item.mapsUrl) {
+        try {
+          const url = new URL(item.mapsUrl);
+          if (url.protocol === 'https:' || url.protocol === 'http:') {
+            externalUrl = url.href;
+
+          }
+        } catch (_) { /* Use the place name when a stored URL is invalid. */ }
+      }
+      const src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+      if (frame.getAttribute('src') !== src) frame.src = src;
+      frame.title = `Google 地圖：${query}`;
+      caption.textContent = item ? (placeQuery ? `Day ${currentDay} · ${item.title || query}` : `Day ${currentDay} · 此行程缺少地點資料，先顯示京都地圖。`) : `Day ${currentDay} 尚無符合篩選的行程，先顯示京都地圖。`;
+      link.href = externalUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+    select.value = selectedMapItemId || '';
+    select.onchange = () => { selectedMapItemId = select.value; updateMap(); syncItineraryCardSelection(); };
+    updateMap();
+  }
   function renderItineraryTab() {
     renderGoogleSheetItineraryControlBar();
 
@@ -2239,7 +2468,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    const itinerary = tripData.itinerary || [];
+    tripData.itinerary = sortItineraryByStartTime(tripData.itinerary || []);
+    const itinerary = tripData.itinerary;
     
     // Day Selector Buttons Grid
     const daySelector = document.getElementById('day-selector-container');
@@ -2259,7 +2489,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.ITINERARY_CATEGORIES.map(c => ({ id: c.id, label: c.label }))
       );
       categoryChips.innerHTML = chipList.map(c => `
-        <button class="chip-btn ${currentItineraryCategory === c.id ? 'active' : ''}" onclick="filterItineraryCategory('${c.id}')">${c.label}</button>
+        <button class="chip-btn ${currentItineraryCategory === c.id ? 'active' : ''}" onclick="filterItineraryCategory('${c.id}')">${window.uiCategoryPresentation(c.id, c.label)}</button>
       `).join('');
     }
 
@@ -2269,13 +2499,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return matchesDay && matchesCat;
     });
 
+    renderItineraryMap(filtered);
     const timelineContainer = document.getElementById('itinerary-timeline-container');
     if (!timelineContainer) return;
 
     const currentDayObj = DAYS_LIST.find(d => d.day === currentDay);
     const dayTitleHeader = `
-      <div style="font-weight:800; font-size:1rem; color:var(--maple-crimson); margin:4px 0 10px 0; display:flex; justify-content:space-between; align-items:center;">
-        <span>📅 Day ${currentDay} (${currentDayObj ? currentDayObj.date : ''}) 行程明細</span>
+      <div class="itinerary-section-title" style="font-size:1rem; margin:4px 0 10px 0; display:flex; justify-content:space-between; align-items:center;">
+        <span>${window.uiIcon("calendar", "travel")} Day ${currentDay} (${currentDayObj ? currentDayObj.date : ''}) 行程明細</span>
         <span style="font-size:0.75rem; color:var(--kyoto-muted); font-weight:normal;">10 天行程</span>
       </div>
     `;
@@ -2293,20 +2524,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const mapsLink = item.mapsUrl || `https://maps.google.com/?q=${encodeURIComponent(displayLocation || item.title)}`;
 
       let badgeClass = 'badge-spot';
-      let badgeIcon = '🍁';
-      if (displayCategory === '正餐' || displayCategory === 'food') { badgeClass = 'badge-meal'; badgeIcon = '🍱'; }
-      else if (displayCategory === '點心' || displayCategory === 'cafe') { badgeClass = 'badge-cafe'; badgeIcon = '🍡'; }
-      else if (displayCategory === '景點' || displayCategory === 'spot') { badgeClass = 'badge-spot'; badgeIcon = '🍁'; }
-      else if (displayCategory === '購物' || displayCategory === 'shopping') { badgeClass = 'badge-shop'; badgeIcon = '🛍️'; }
-      else if (displayCategory === '交通' || displayCategory === 'transport') { badgeClass = 'badge-transport'; badgeIcon = '🚃'; }
+      let badgeIcon = window.uiIcon("leaf", "travel");
+      if (displayCategory === '正餐' || displayCategory === 'food') { badgeClass = 'badge-meal'; badgeIcon = window.uiIcon("utensils"); }
+      else if (displayCategory === '點心' || displayCategory === 'cafe') { badgeClass = 'badge-cafe'; badgeIcon = window.uiIcon("coffee"); }
+      else if (displayCategory === '景點' || displayCategory === 'spot') { badgeClass = 'badge-spot'; badgeIcon = window.uiIcon("leaf", "travel"); }
+      else if (displayCategory === '購物' || displayCategory === 'shopping') { badgeClass = 'badge-shop'; badgeIcon = window.uiIcon("shoppingBag"); }
+      else if (displayCategory === '交通' || displayCategory === 'transport') { badgeClass = 'badge-transport'; badgeIcon = window.uiIcon("train"); }
 
-      // Match with Shopping Wishlist locations by name, location, or day!
+      // Only an explicit itineraryId creates an itinerary/shopping association.
       const matchingLocs = (tripData.shopping || []).filter(loc => {
-        if (!loc || !loc.location) return false;
-        const locMatch = displayLocation && (displayLocation.toLowerCase().includes(loc.location.toLowerCase()) || loc.location.toLowerCase().includes(displayLocation.toLowerCase()));
-        const titleMatch = item.title && (item.title.toLowerCase().includes(loc.location.toLowerCase()) || loc.location.toLowerCase().includes(item.title.toLowerCase()));
-        const dayMatch = loc.day && String(loc.day) === String(item.day);
-        return locMatch || titleMatch || dayMatch;
+        return Boolean(loc && loc.itineraryId && String(loc.itineraryId) === String(item.id));
       });
 
       let shoppingBadgesHtml = '';
@@ -2314,15 +2541,15 @@ document.addEventListener('DOMContentLoaded', () => {
         shoppingBadgesHtml = matchingLocs.map(mLoc => {
           const totalItemsCount = mLoc.items ? mLoc.items.length : 0;
           const unboughtCount = mLoc.items ? mLoc.items.filter(i => !Boolean(i.bought)).length : 0;
-          const badgeColor = unboughtCount > 0 ? 'var(--amber-gold)' : '#10B981';
+          const badgeColor = unboughtCount > 0 ? 'var(--ui-muted)' : 'var(--ui-accent-text)';
           const badgeText = unboughtCount > 0
-            ? `🛍️ 購物提醒：${mLoc.location} (${unboughtCount} 項待買 / 共 ${totalItemsCount} 項)`
-            : `🛍️ 購物連結：${mLoc.location} (全數已買 ✅)`;
+            ? `${window.uiIcon("shoppingBag", "muted")} 購物提醒：${mLoc.location} (${unboughtCount} 項待買 / 共 ${totalItemsCount} 項)`
+            : `${window.uiIcon("shoppingBag", "muted")} 購物連結：${mLoc.location} (全數已買 ${window.uiIcon("check", "active")})`;
 
           return `
-            <div onclick="event.stopPropagation(); openLocationDetailModal('${mLoc.id}')" style="margin-top:6px; background:rgba(211, 84, 0, 0.07); border:1px solid rgba(211, 84, 0, 0.2); color:${badgeColor}; font-size:0.75rem; font-weight:700; padding:5px 10px; border-radius:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;" title="點擊直接查看此地點的購物清單與照片">
+            <div data-no-card-action onclick="event.stopPropagation(); openLocationDetailModal('${mLoc.id}')" class="itinerary-shopping-reminder" style="margin-top:6px; background:var(--ui-surface); border:1px solid var(--ui-border); color:${badgeColor}; font-size:0.75rem; font-weight:400; padding:5px 10px; border-radius:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;" title="點擊直接查看此地點的購物清單與照片">
               <span>${badgeText}</span>
-              <span style="font-size:0.75rem; font-weight:800;">查看清單 ➔</span>
+              <span style="font-size:0.75rem; font-weight:500;">查看清單 ➔</span>
             </div>
           `;
         }).join('');
@@ -2334,19 +2561,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return `
         <div class="timeline-item">
           <div class="timeline-time">${displayTime}</div>
-          <div class="timeline-card" data-it-id="${escapedId}" onclick="window.editItinerary(this)" style="cursor:pointer;" title="點擊編輯行程資訊">
+          <div class="timeline-card" data-it-id="${escapedId}" tabindex="0" style="cursor:pointer;">
             <div class="flex-between" style="margin-bottom:4px;">
-              <div style="font-weight:800; font-size:0.98rem; color:var(--kyoto-dark);">${item.title}</div>
-              <span class="badge ${badgeClass}">${badgeIcon} ${displayCategory}</span>
+              <div class="itinerary-place-title" style="font-size:0.98rem;">${item.title}</div>
+              <div class="itinerary-card-header-actions">
+                <span class="badge ${badgeClass}">${badgeIcon} ${displayCategory}</span>
+              </div>
             </div>
-            ${displayLocation ? `<div style="font-size:0.8rem; color:var(--amber-gold); margin-bottom:6px;">📍 ${displayLocation}</div>` : ''}
-            ${(item.note && item.note !== 'undefined') ? `<div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:8px; background:var(--washi-bg); padding:6px 10px; border-radius:8px; white-space:pre-wrap; word-break:break-word; line-height:1.45;">💡 ${item.note}</div>` : ''}
+            ${displayLocation ? `<div class="itinerary-place-metadata" style="font-size:0.8rem; margin-bottom:6px;">${window.uiIcon("mapPin", "travel")} ${displayLocation}</div>` : ''}
+            ${(item.note && item.note !== 'undefined') ? `<div class="itinerary-helper" style="font-size:0.78rem; margin-bottom:8px; background:var(--ui-background); padding:6px 10px; border-radius:8px; white-space:pre-wrap; word-break:normal; overflow-wrap:break-word; line-height:1.6;">${window.uiIcon("lightbulb", "muted")} ${item.note}</div>` : ''}
             ${shoppingBadgesHtml}
             <div class="flex-between" style="margin-top:6px;">
-              <div style="font-size:0.75rem; font-weight:700; color:var(--maple-crimson);">${formatCostDisplay(item)}</div>
+              <div class="itinerary-budget" style="font-size:0.75rem;">${formatCostDisplay(item)}</div>
               <div style="display:flex; gap:6px; align-items:center;">
-                <a href="${mapsLink}" target="_blank" onclick="event.stopPropagation();" class="btn-icon-sm" style="text-decoration:none;" title="開啟地圖導航">🗺️</a>
-                <button onclick="event.stopPropagation(); window.deleteItinerary('${escapedId}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除行程">🗑️</button>
+                <button type="button" class="itinerary-outline-button itinerary-edit-button" aria-label="編輯行程" title="編輯行程" onclick="event.stopPropagation(); window.editItinerary(this.closest('.timeline-card'));">${window.uiIcon("pencil", "inherit")}</button>
+                <a href="${mapsLink}" target="_blank" onclick="event.stopPropagation();" class="btn-icon-sm itinerary-card-map-action" style="text-decoration:none;" title="開啟地圖導航">${window.uiIcon("map", "travel")}</a>
+                <button onclick="event.stopPropagation(); window.deleteItinerary('${escapedId}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除行程">${window.uiIcon("trash", "danger")}</button>
               </div>
             </div>
           </div>
@@ -2355,15 +2585,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
 
     timelineContainer.onclick = function(e) {
+      if (!(e.target instanceof Element)) return;
+      if (e.target.closest('button, a, input, select, textarea, [data-no-card-action]')) return;
       const card = e.target.closest('.timeline-card');
       if (!card) return;
-      if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
-        return;
-      }
-      if (window.editItinerary) {
+      if (window.matchMedia('(min-width: 1024px)').matches) {
+        if (itineraryEditorOpen) return;
+        selectedMapItemId = String(card.dataset.itId);
+        renderItineraryMap(filtered);
+        syncItineraryCardSelection();
+      } else if (window.editItinerary) {
         window.editItinerary(card);
       }
     };
+    timelineContainer.onkeydown = function(e) {
+      if (!(e.target instanceof Element)) return;
+      if (e.target.closest('button, a, input, select, textarea, [data-no-card-action]')) return;
+      if (e.target.matches('.timeline-card') && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        e.target.click();
+      }
+    };
+    syncItineraryCardSelection();
   }
 
   window.switchDay = function(d) {
@@ -2449,6 +2692,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function sortItineraryByStartTime(items) {
+    return (items || []).map((item, originalIndex) => {
+      const rawTime = item && item.time != null ? String(item.time).trim() : '';
+      const start = rawTime && rawTime !== 'undefined' ? parseTimeRangeToHHMM(rawTime).start : null;
+      const startMinutes = start ? Number(start.slice(0, 2)) * 60 + Number(start.slice(3)) : null;
+      return { item, originalIndex, day: Number.isFinite(Number(item && item.day)) ? Number(item.day) : Number.MAX_SAFE_INTEGER, startMinutes };
+    }).sort((a, b) => {
+      if (a.day !== b.day) return a.day - b.day;
+      if (a.startMinutes === null && b.startMinutes !== null) return 1;
+      if (a.startMinutes !== null && b.startMinutes === null) return -1;
+      if (a.startMinutes !== b.startMinutes) return (a.startMinutes ?? 0) - (b.startMinutes ?? 0);
+      return a.originalIndex - b.originalIndex;
+    }).map(entry => entry.item);
+  }
+
   window.editItinerary = function(arg, fallbackTitle = '') {
     try {
       if (!tripData.itinerary || !Array.isArray(tripData.itinerary)) {
@@ -2474,9 +2732,18 @@ document.addEventListener('DOMContentLoaded', () => {
         item = tripData.itinerary.find(i => i.title === title);
       }
 
+      if (item && itineraryEditorOpen && itineraryEditorHasChanges()) {
+        if (!window.confirm('目前行程有尚未儲存的變更，確定切換編輯項目嗎？')) return;
+      }
+
       if (item) {
         const titleEl = document.getElementById('modal-itinerary-title');
-        if (titleEl) titleEl.innerText = '🗓️ 編輯行程景點';
+        window.uiSetIconText(titleEl, "calendar", "編輯行程景點");
+        const contextEl = document.getElementById('itinerary-editor-context');
+        if (contextEl) {
+          contextEl.textContent = `Day ${item.day || currentDay} · ${item.title || '未命名行程'}`;
+          contextEl.hidden = false;
+        }
 
         const idEl = document.getElementById('it-id');
         if (idEl) idEl.value = item.id || '';
@@ -2518,10 +2785,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const noteEl = document.getElementById('it-note');
         if (noteEl) noteEl.value = item.note || '';
       }
+      if (item) {
+        itineraryEditorBaseline = itineraryFormSignature();
+        routeItineraryEditor(true);
+      }
     } catch (err) {
-      console.error('Error populating edit itinerary modal:', err);
-    } finally {
-      window.openModal('modal-itinerary');
+      console.error('Error populating edit itinerary editor:', err);
     }
   };
 
@@ -2558,27 +2827,28 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = packing.map((cat, catIdx) => `
       <div class="packing-category" data-category="${cat.category}" data-cat-idx="${catIdx}">
         <div class="packing-header" data-cat-idx="${catIdx}">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span class="drag-handle-cat" style="font-size:0.85rem; opacity:0.4; cursor:grab; padding:0 4px;" title="長按拖拉調整分類順序">≡</span>
+          <div class="packing-category-heading" style="display:flex; align-items:center; gap:6px;">
+            <span class="drag-handle-cat ui-drag-grip" style="cursor:grab; padding:0 4px;" title="長按拖拉調整分類順序">${window.uiIcon("grip", "muted")}</span>
             <span onclick="editPackingCategory('${cat.category}')" style="cursor:pointer;" title="點擊編輯分類">${cat.category}</span>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             <span style="font-size:0.78rem; color:var(--kyoto-muted); font-weight:normal; margin-right:4px;">${cat.items.filter(i => i.checked).length}/${cat.items.length}</span>
-            <button onclick="deletePackingCategory('${cat.category}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除分類">🗑️</button>
+            <button onclick="deletePackingCategory('${cat.category}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem;" title="刪除分類">${window.uiIcon("trash", "danger")}</button>
           </div>
         </div>
         ${cat.items.map(item => `
           <div class="packing-item-row ${item.checked ? 'checked' : ''}" draggable="true" data-item-id="${item.id}" data-cat-name="${cat.category}">
             <div class="checkbox-custom" onclick="togglePackingItem('${item.id}')" title="點擊方框勾選/取消">${item.checked ? '✓' : ''}</div>
-            <div class="packing-text" style="flex:1;">
+            <div class="packing-text" style="flex:1; min-width:0;">
               <input type="text" class="packing-inline-input" value="${item.text.replace(/"/g, '&quot;')}" onblur="updatePackingText('${item.id}', this.value)" onkeydown="if(event.key==='Enter') this.blur();" placeholder="輸入項目名稱..." title="點擊直接修改文字" />
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-              <span class="drag-handle" style="font-size:0.85rem; opacity:0.35; cursor:grab; padding:0 4px;" title="長按拖拉移動分類">≡</span>
-              <button onclick="deletePackingItem('${item.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem; padding:4px;" title="刪除">🗑️</button>
+              <span class="drag-handle ui-drag-grip" style="cursor:grab; padding:0 4px;" title="長按拖拉移動分類">${window.uiIcon("grip", "muted")}</span>
+              <button onclick="deletePackingItem('${item.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem; padding:4px;" title="刪除">${window.uiIcon("trash", "danger")}</button>
             </div>
           </div>
         `).join('')}
+        <button type="button" class="packing-add-item" draggable="false">${window.uiIcon("plus", "inherit")}<span>新增項目</span></button>
       </div>
     `).join('');
 
@@ -2604,218 +2874,189 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  function movePackingItemToCategory(itemId, targetCatName) {
-    let sourceItem = null;
-
-    tripData.packing.forEach(cat => {
-      const idx = cat.items.findIndex(i => i.id === itemId);
-      if (idx !== -1) {
-        sourceItem = cat.items.splice(idx, 1)[0];
-      }
-    });
-
-    if (sourceItem) {
-      const targetCat = tripData.packing.find(c => c.category === targetCatName);
-      if (targetCat) {
-        targetCat.items.push(sourceItem);
-      } else {
-        tripData.packing.push({
-          id: 'cat-' + Date.now(),
-          category: targetCatName,
-          items: [sourceItem]
-        });
-      }
-      saveDataAndUpdate();
-    }
+  // Hover indexes refer to the array BEFORE removing the dragged source.
+  function packingInsertionIndex(sourceIndex, hoveredItemIndex, after, sameArray) {
+    const insertionIndex = hoveredItemIndex + (after ? 1 : 0);
+    return insertionIndex - (sameArray && sourceIndex < insertionIndex ? 1 : 0);
   }
 
-  function reorderPackingCategories(fromIndex, toIndex) {
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
-    const movedCat = tripData.packing.splice(fromIndex, 1)[0];
-    if (movedCat) {
-      tripData.packing.splice(toIndex, 0, movedCat);
-      saveDataAndUpdate();
+  function movePackingItemToCategory(itemId, targetCatName, hoveredItemId = null, after = true) {
+    const sourceCat = tripData.packing.find(cat => cat.items.some(item => item.id === itemId));
+    const targetCat = tripData.packing.find(cat => cat.category === targetCatName);
+    if (!sourceCat || !targetCat) return;
+    const sourceIndex = sourceCat.items.findIndex(item => item.id === itemId);
+    const hoveredItemIndex = hoveredItemId === null ? targetCat.items.length : targetCat.items.findIndex(item => item.id === hoveredItemId);
+    if (hoveredItemIndex < 0) return;
+    const insertionIndex = packingInsertionIndex(sourceIndex, hoveredItemIndex, hoveredItemId !== null && after, sourceCat === targetCat);
+    if (sourceCat === targetCat && insertionIndex === sourceIndex) return;
+    const [sourceItem] = sourceCat.items.splice(sourceIndex, 1);
+    targetCat.items.splice(insertionIndex, 0, sourceItem);
+    saveDataAndUpdate();
+  }
+
+  function reorderPackingCategories(sourceIndex, hoveredCategoryIndex, after = false) {
+    if (!tripData.packing[sourceIndex] || !tripData.packing[hoveredCategoryIndex]) return;
+    const insertionIndex = packingInsertionIndex(sourceIndex, hoveredCategoryIndex, after, true);
+    if (insertionIndex === sourceIndex) return;
+    const [category] = tripData.packing.splice(sourceIndex, 1);
+    tripData.packing.splice(insertionIndex, 0, category);
+    saveDataAndUpdate();
+  }
+
+  function packingInsertionAt(x, y, source, categorySort) {
+    const hit = document.elementFromPoint(x, y);
+    if (hit && hit.closest('.packing-add-item, .packing-inline-add-row')) return null;
+    const category = hit && hit.closest('.packing-category');
+    if (!category) return null;
+    let element = categorySort ? category : hit.closest('.packing-item-row');
+    if (element === source) return null;
+    if (!element && !categorySort) {
+      // Category whitespace/empty lists: resolve the nearest actual item boundary.
+      const rows = [...category.querySelectorAll('.packing-item-row')].filter(row => row !== source);
+      for (const row of rows) {
+        const rect = row.getBoundingClientRect();
+        if (y < rect.top + rect.height / 2) return { element: row, category, after: false };
+      }
+      return { element: rows.at(-1) || category, category, after: true };
     }
+    const rect = element.getBoundingClientRect();
+    return { element, category, after: y >= rect.top + rect.height / 2 };
+  }
+
+  function bindDragSort(source, handle, targetSelector, draggingClass, targetClass, commit, resolveInsertion = null) {
+    let state = null;
+    let suppressClick = false;
+    const blocked = 'button, input, select, textarea, a, .checkbox-custom';
+    function targetAt(x, y) {
+      if (resolveInsertion) return resolveInsertion(x, y);
+      const hit = document.elementFromPoint(x, y);
+      const target = hit && hit.closest(targetSelector);
+      return target && target !== source ? target : null;
+    }
+    function paint() {
+      state.frame = null;
+      // Hit-test before visual writes; only change the old/new insertion target.
+      const insertion = targetAt(state.x, state.y);
+      const target = resolveInsertion ? insertion && insertion.element : insertion;
+      const side = resolveInsertion && insertion ? (insertion.after ? 'after' : 'before') : null;
+      if (target !== state.target || side !== state.side) {
+        if (state.target) state.target.classList.remove(targetClass, 'packing-insert-before', 'packing-insert-after');
+        if (target) {
+          target.classList.add(targetClass);
+          if (side) target.classList.add('packing-insert-' + side);
+        }
+        state.target = target;
+        state.side = side;
+      }
+      state.ghost.style.transform = `translate3d(${state.x - state.offsetX}px, ${state.y - state.offsetY}px, 0)`;
+    }
+    function activate() {
+      if (!state || !source.isConnected) return finish(false);
+      const rect = source.getBoundingClientRect();
+      state.offsetX = state.startX - rect.left;
+      state.offsetY = state.startY - rect.top;
+      const ghost = source.cloneNode(true);
+      ghost.removeAttribute('id');
+      ghost.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      ghost.classList.add('drag-sort-ghost');
+      ghost.style.width = rect.width + 'px';
+      ghost.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+      ghost.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(ghost);
+      state.ghost = ghost;
+      source.classList.add(draggingClass);
+      state.active = true;
+      suppressClick = true;
+    }
+    function finish(commitDrop, x, y) {
+      if (!state) return;
+      const current = state;
+      const target = current.active && commitDrop ? targetAt(x ?? current.x, y ?? current.y) : null;
+      clearTimeout(current.timer);
+      if (current.frame !== null) cancelAnimationFrame(current.frame);
+      if (current.target) current.target.classList.remove(targetClass, 'packing-insert-before', 'packing-insert-after');
+      source.classList.remove(draggingClass);
+      if (current.ghost) current.ghost.remove();
+      state = null;
+      document.removeEventListener('mousemove', mouseMove);
+      document.removeEventListener('mouseup', mouseEnd);
+      document.removeEventListener('touchmove', touchMove);
+      document.removeEventListener('touchend', touchEnd);
+      document.removeEventListener('touchcancel', cancel);
+      window.removeEventListener('blur', cancel);
+      document.removeEventListener('keydown', escape);
+      // Shield the release click even if commit replaces the source DOM.
+      const releaseClick = e => { e.preventDefault(); e.stopImmediatePropagation(); };
+      if (current.active) document.addEventListener('click', releaseClick, { capture: true, once: true });
+      // Cleanup before the existing commit can rebuild this DOM.
+      if (target) commit(target);
+      if (current.active) setTimeout(() => {
+        suppressClick = false;
+        document.removeEventListener('click', releaseClick, true);
+      }, 400);
+    }
+    function move(e, x, y) {
+      if (!state) return;
+      state.x = x; state.y = y;
+      if (!state.active) {
+        if (Math.hypot(x - state.startX, y - state.startY) < 8) return;
+        if (state.touch) return finish(false); // Ordinary touch scroll remains native.
+        activate();
+      }
+      if (!state) return;
+      if (e.cancelable) e.preventDefault();
+      if (state.frame === null) state.frame = requestAnimationFrame(paint);
+    }
+    function mouseMove(e) { move(e, e.clientX, e.clientY); }
+    function mouseEnd(e) { finish(true, e.clientX, e.clientY); }
+    function touchMove(e) {
+      if (e.touches.length !== 1) return cancel();
+      move(e, e.touches[0].clientX, e.touches[0].clientY);
+    }
+    function touchEnd(e) {
+      const touch = e.changedTouches[0];
+      finish(true, touch.clientX, touch.clientY);
+    }
+    function cancel() { finish(false); }
+    function escape(e) { if (e.key === 'Escape') cancel(); }
+    function start(e, x, y, touch) {
+      if (state || e.target.closest(blocked)) return;
+      state = { x, y, startX: x, startY: y, touch, active: false, frame: null, target: null, ghost: null };
+      if (touch) {
+        state.timer = setTimeout(activate, 300);
+        document.addEventListener('touchmove', touchMove, { passive: false });
+        document.addEventListener('touchend', touchEnd);
+        document.addEventListener('touchcancel', cancel);
+      } else {
+        document.addEventListener('mousemove', mouseMove);
+        document.addEventListener('mouseup', mouseEnd);
+      }
+      window.addEventListener('blur', cancel);
+      document.addEventListener('keydown', escape);
+    }
+    handle.addEventListener('mousedown', e => {
+      if (e.button === 0) start(e, e.clientX, e.clientY, false);
+    });
+    handle.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) start(e, e.touches[0].clientX, e.touches[0].clientY, true);
+    }, { passive: true });
+    source.addEventListener('dragstart', e => e.preventDefault());
+    source.addEventListener('click', e => {
+      if (suppressClick) { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, true);
   }
 
   function initPackingDragAndDrop() {
-    const itemRows = document.querySelectorAll('.packing-item-row');
-    const categories = document.querySelectorAll('.packing-category');
-
-    let draggedItemId = null;
-    let longPressTimer = null;
-    let touchGhostEl = null;
-
-    let draggedCatIdx = null;
-    let catLongPressTimer = null;
-    let catTouchGhostEl = null;
-
-    // --- A. CATEGORY REORDERING (Mobile Touch & Desktop) ---
-    categories.forEach(cat => {
+    document.querySelectorAll('.packing-category').forEach(cat => {
       const header = cat.querySelector('.packing-header');
-      if (!header) return;
-
-      // Mobile Touch Long-Press on Category Header
-      header.addEventListener('touchstart', (e) => {
-        // If clicking on title text or delete button, ignore long press
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-
-        const catIdx = parseInt(header.dataset.catIdx, 10);
-        catLongPressTimer = setTimeout(() => {
-          draggedCatIdx = catIdx;
-          if (navigator.vibrate) navigator.vibrate(60);
-          cat.classList.add('dragging-cat');
-
-          catTouchGhostEl = cat.cloneNode(true);
-          catTouchGhostEl.style.position = 'fixed';
-          catTouchGhostEl.style.pointerEvents = 'none';
-          catTouchGhostEl.style.zIndex = '9999';
-          catTouchGhostEl.style.opacity = '0.9';
-          catTouchGhostEl.style.boxShadow = '0 12px 30px rgba(0,0,0,0.25)';
-          catTouchGhostEl.style.width = cat.offsetWidth + 'px';
-          document.body.appendChild(catTouchGhostEl);
-        }, 300);
-      }, { passive: true });
-
-      header.addEventListener('touchmove', (e) => {
-        const touch = e.touches[0];
-        if (catTouchGhostEl) {
-          e.preventDefault();
-          catTouchGhostEl.style.left = (touch.clientX - 40) + 'px';
-          catTouchGhostEl.style.top = (touch.clientY - 20) + 'px';
-
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetCat = targetEl ? targetEl.closest('.packing-category') : null;
-
-          categories.forEach(c => c.classList.remove('cat-drop-target'));
-          if (targetCat && targetCat !== cat) {
-            targetCat.classList.add('cat-drop-target');
-          }
-        } else {
-          clearTimeout(catLongPressTimer);
-        }
-      }, { passive: false });
-
-      header.addEventListener('touchend', (e) => {
-        clearTimeout(catLongPressTimer);
-        if (draggedCatIdx !== null && catTouchGhostEl) {
-          const touch = e.changedTouches[0];
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetCat = targetEl ? targetEl.closest('.packing-category') : null;
-
-          if (targetCat) {
-            const targetIdx = parseInt(targetCat.dataset.catIdx, 10);
-            if (!isNaN(targetIdx) && targetIdx !== draggedCatIdx) {
-              reorderPackingCategories(draggedCatIdx, targetIdx);
-            }
-          }
-
-          if (catTouchGhostEl && catTouchGhostEl.parentNode) {
-            catTouchGhostEl.parentNode.removeChild(catTouchGhostEl);
-          }
-          catTouchGhostEl = null;
-          draggedCatIdx = null;
-          categories.forEach(c => c.classList.remove('cat-drop-target', 'dragging-cat'));
-        }
-      });
+      if (header) bindDragSort(cat, header, '.packing-category', 'dragging-cat', 'packing-insertion-target', insertion => {
+        reorderPackingCategories(Number(cat.dataset.catIdx), Number(insertion.category.dataset.catIdx), insertion.after);
+      }, (x, y) => packingInsertionAt(x, y, cat, true));
     });
-
-    // --- B. ITEM DRAG & DROP ACROSS CATEGORIES ---
-    itemRows.forEach(row => {
-      row.addEventListener('dragstart', (e) => {
-        draggedItemId = row.dataset.itemId;
-        row.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', draggedItemId);
-      });
-
-      row.addEventListener('dragend', () => {
-        row.classList.remove('dragging');
-        categories.forEach(c => c.classList.remove('drag-over'));
-      });
-    });
-
-    categories.forEach(cat => {
-      cat.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        cat.classList.add('drag-over');
-      });
-
-      cat.addEventListener('dragleave', () => {
-        cat.classList.remove('drag-over');
-      });
-
-      cat.addEventListener('drop', (e) => {
-        e.preventDefault();
-        cat.classList.remove('drag-over');
-        const targetCatName = cat.dataset.category;
-        if (draggedItemId && targetCatName) {
-          movePackingItemToCategory(draggedItemId, targetCatName);
-        }
-      });
-    });
-
-    // Touch Event Long-Press Drag & Drop for Mobile Items
-    itemRows.forEach(row => {
-      row.addEventListener('touchstart', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-
-        const itemId = row.dataset.itemId;
-        longPressTimer = setTimeout(() => {
-          draggedItemId = itemId;
-          if (navigator.vibrate) navigator.vibrate(50);
-          row.classList.add('dragging');
-
-          touchGhostEl = row.cloneNode(true);
-          touchGhostEl.style.position = 'fixed';
-          touchGhostEl.style.pointerEvents = 'none';
-          touchGhostEl.style.zIndex = '9999';
-          touchGhostEl.style.opacity = '0.88';
-          touchGhostEl.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
-          touchGhostEl.style.width = row.offsetWidth + 'px';
-          document.body.appendChild(touchGhostEl);
-        }, 300);
-      }, { passive: true });
-
-      row.addEventListener('touchmove', (e) => {
-        const touch = e.touches[0];
-        if (touchGhostEl) {
-          e.preventDefault();
-          touchGhostEl.style.left = (touch.clientX - 40) + 'px';
-          touchGhostEl.style.top = (touch.clientY - 20) + 'px';
-
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetCat = targetEl ? targetEl.closest('.packing-category') : null;
-
-          categories.forEach(c => c.classList.remove('drag-over'));
-          if (targetCat) {
-            targetCat.classList.add('drag-over');
-          }
-        } else {
-          clearTimeout(longPressTimer);
-        }
-      }, { passive: false });
-
-      row.addEventListener('touchend', (e) => {
-        clearTimeout(longPressTimer);
-        if (draggedItemId && touchGhostEl) {
-          const touch = e.changedTouches[0];
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetCat = targetEl ? targetEl.closest('.packing-category') : null;
-
-          if (targetCat) {
-            const targetCatName = targetCat.dataset.category;
-            movePackingItemToCategory(draggedItemId, targetCatName);
-          }
-
-          if (touchGhostEl && touchGhostEl.parentNode) {
-            touchGhostEl.parentNode.removeChild(touchGhostEl);
-          }
-          touchGhostEl = null;
-          draggedItemId = null;
-          categories.forEach(c => c.classList.remove('drag-over'));
-          itemRows.forEach(r => r.classList.remove('dragging'));
-        }
-      });
+    document.querySelectorAll('.packing-item-row').forEach(row => {
+      bindDragSort(row, row, '.packing-item-row', 'dragging', 'packing-insertion-target', insertion => {
+        movePackingItemToCategory(row.dataset.itemId, insertion.category.dataset.category, insertion.element.dataset.itemId || null, insertion.after);
+      }, (x, y) => packingInsertionAt(x, y, row, false));
     });
   }
 
@@ -2843,7 +3084,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!targetItem) return;
 
-    document.getElementById('modal-packing-item-title').innerText = '🎒 編輯行李項目';
+    window.uiSetIconText(document.getElementById("modal-packing-item-title"), "luggage", "編輯行李項目");
+    document.getElementById('pk-item-category-select').disabled = false;
+    document.getElementById('pk-item-category-group').hidden = false;
+    document.getElementById('pk-item-context-category').hidden = true;
+    document.getElementById('pk-item-submit').textContent = '儲存行李項目';
     document.getElementById('edit-packing-item-id').value = targetItem.id;
     document.getElementById('pk-item-name').value = targetItem.text || '';
 
@@ -2865,7 +3110,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.editPackingCategory = function(catName) {
-    document.getElementById('modal-packing-cat-title').innerText = '📁 編輯行李分類名稱';
+    window.uiSetIconText(document.getElementById("modal-packing-cat-title"), "folder", "編輯行李分類名稱");
     document.getElementById('edit-packing-cat-old-name').value = catName;
     document.getElementById('pk-cat-name').value = catName;
     openModal('modal-packing-cat');
@@ -2919,12 +3164,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const boughtItemsCount = loc.items ? loc.items.filter(i => Boolean(i.bought)).length : 0;
       const unboughtItemsCount = totalItemsCount - boughtItemsCount;
 
-      let statusBadgeText = `🛒 ${totalItemsCount} 項商品`;
+      let statusBadgeText = `${window.uiIcon("cart", "muted")} ${totalItemsCount} 項商品`;
       if (totalItemsCount > 0) {
         if (boughtItemsCount === totalItemsCount) {
-          statusBadgeText = `🛒 ${totalItemsCount} 項商品 (全數已買)`;
+          statusBadgeText = `${window.uiIcon("cart", "muted")} ${totalItemsCount} 項商品 (全數已買)`;
         } else {
-          statusBadgeText = `🛒 ${totalItemsCount} 項 (已買 ${boughtItemsCount} / 未買 ${unboughtItemsCount})`;
+          statusBadgeText = `${window.uiIcon("cart", "muted")} ${totalItemsCount} 項 (已買 ${boughtItemsCount} / 未買 ${unboughtItemsCount})`;
         }
       }
 
@@ -2932,35 +3177,35 @@ document.addEventListener('DOMContentLoaded', () => {
       if (loc.itineraryId) {
         const boundItinerary = (tripData.itinerary || []).find(i => i.id === loc.itineraryId);
         if (boundItinerary) {
-          itineraryBadge = `<span class="badge badge-spot" style="background:#8B5CF6; color:#FFF; font-size:0.68rem; padding:2px 8px;">🔗 [Day ${boundItinerary.day}] ${boundItinerary.title}</span>`;
+          itineraryBadge = `<span class="badge badge-spot badge-sage" style="font-size:0.68rem; padding:2px 8px;">${window.uiIcon("link", "muted")} [Day ${boundItinerary.day}] ${boundItinerary.title}</span>`;
         }
       }
-      const itemNamesPreview = loc.items ? loc.items.map(i => Boolean(i.bought) ? `<s style="opacity:0.5;">${i.name}</s>` : `<span>${i.name}</span>`).join('、 ') : '';
+      const itemNamesPreview = loc.items ? loc.items.map(i => `<span class="shopping-summary-item"><span class="shopping-summary-bullet" aria-hidden="true">•</span>${Boolean(i.bought) ? `<s class="shopping-summary-name" style="opacity:0.5;">${i.name}</s>` : `<span class="shopping-summary-name">${i.name}</span>`}</span>`).join('') : '';
 
       return `
         <div class="shopping-card" data-loc-id="${loc.id}" data-loc-idx="${locIdx}" draggable="true" style="cursor:pointer;">
           <img src="${coverImage}" class="shopping-img" alt="${loc.location}" title="封面" />
           <div class="shopping-details">
             <div>
-              <div class="flex-between">
-                <div style="display:flex; align-items:center; gap:4px;">
-                  <span class="drag-handle-shop" style="font-size:0.85rem; opacity:0.4; cursor:grab;" title="長按拖拉移動順序">≡</span>
-                  <div class="shopping-title" style="font-size:1.05rem;">📍 ${loc.location}</div>
+              <div class="flex-between shopping-location-header">
+                <div class="shopping-name-row" style="display:flex; align-items:center; gap:4px;">
+                  <span class="drag-handle-shop ui-drag-grip" style="cursor:grab;" title="長按拖拉移動順序">${window.uiIcon("grip", "muted")}</span>
+                  <div class="shopping-title" style="font-size:1.05rem;">${window.uiIcon("mapPin", "travel")} ${loc.location}</div>
                 </div>
-                <span class="badge badge-shop" style="font-size:0.68rem;">${loc.category}</span>
+                <span class="badge badge-shop shopping-category-badge" style="font-size:0.68rem;">${loc.category}</span>
               </div>
               <div style="display:flex; gap:6px; margin:4px 0; flex-wrap:wrap;">
                 <span class="badge badge-spot" style="font-size:0.7rem; padding:2px 8px;">${statusBadgeText}</span>
                 ${itineraryBadge}
               </div>
-              <div style="font-size:0.76rem; color:var(--kyoto-muted); margin-top:4px; line-height:1.3; max-height:2.6em; overflow:hidden;">
+              <div class="shopping-items-summary">
                 ${itemNamesPreview || '尚無項目'}
               </div>
             </div>
             <div class="flex-between" style="margin-top:8px;">
               <button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.editShoppingLocation('${loc.id}');" class="btn-secondary btn-edit-shop-loc" data-loc-id="${loc.id}" style="padding:4px 12px; font-size:0.75rem; border-radius:6px; position:relative; z-index:100; cursor:pointer;" title="編輯地點資訊">編輯地點</button>
               <div style="display:flex; gap:6px; align-items:center;">
-                <button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.deleteShoppingLocation('${loc.id}');" class="btn-delete-shop-loc" data-loc-id="${loc.id}" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem; position:relative; z-index:100;" title="刪除地點">🗑️</button>
+                <button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.deleteShoppingLocation('${loc.id}');" class="btn-delete-shop-loc" data-loc-id="${loc.id}" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem; position:relative; z-index:100;" title="刪除地點">${window.uiIcon("trash", "danger")}</button>
               </div>
             </div>
           </div>
@@ -2982,19 +3227,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function reorderShoppingSubitems(locId, fromIdx, toIdx) {
     const loc = tripData.shopping.find(s => s.id === locId);
-    if (!loc || !loc.items || fromIdx === toIdx) return;
+    if (!loc || !loc.items || !Number.isInteger(fromIdx) || !Number.isInteger(toIdx) || fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx >= loc.items.length || toIdx >= loc.items.length) return;
     const moved = loc.items.splice(fromIdx, 1)[0];
-    if (moved) {
-      loc.items.splice(toIdx, 0, moved);
-      saveDataAndUpdate();
-    }
+    loc.items.splice(toIdx, 0, moved);
+    saveDataAndUpdate();
+    // The detail modal uses window.currentLocationDetailId; refresh its indices after reorder.
+    renderLocationDetailModal(locId);
   }
+
+  window.moveShoppingSubitem = function(locId, itemId, direction) {
+    const loc = tripData.shopping.find(s => s.id === locId);
+    if (!loc || !loc.items || (direction !== -1 && direction !== 1)) return;
+    const fromIdx = loc.items.findIndex(item => item.id === itemId);
+    if (fromIdx < 0) return;
+    reorderShoppingSubitems(locId, fromIdx, fromIdx + direction);
+  };
 
   function initShoppingDragAndDrop() {
     const cards = document.querySelectorAll('.shopping-card[data-loc-idx]');
-    let draggedLocIdx = null;
-    let shopLongPressTimer = null;
-    let shopGhostEl = null;
 
     cards.forEach(card => {
       // Direct Click Handler for Card Body
@@ -3026,139 +3276,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      // Mobile Touch Long-Press on Outer Shopping Location Card
-      card.addEventListener('touchstart', (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT') return;
-
-        const locIdx = parseInt(card.dataset.locIdx, 10);
-        shopLongPressTimer = setTimeout(() => {
-          draggedLocIdx = locIdx;
-          if (navigator.vibrate) navigator.vibrate(60);
-          card.classList.add('dragging-shop');
-
-          shopGhostEl = card.cloneNode(true);
-          shopGhostEl.style.position = 'fixed';
-          shopGhostEl.style.pointerEvents = 'none';
-          shopGhostEl.style.zIndex = '9999';
-          shopGhostEl.style.opacity = '0.9';
-          shopGhostEl.style.boxShadow = '0 12px 30px rgba(0,0,0,0.25)';
-          shopGhostEl.style.width = card.offsetWidth + 'px';
-          document.body.appendChild(shopGhostEl);
-        }, 300);
-      }, { passive: true });
-
-      card.addEventListener('touchmove', (e) => {
-        const touch = e.touches[0];
-        if (shopGhostEl) {
-          e.preventDefault();
-          shopGhostEl.style.left = (touch.clientX - 40) + 'px';
-          shopGhostEl.style.top = (touch.clientY - 20) + 'px';
-
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetCard = targetEl ? targetEl.closest('.shopping-card[data-loc-idx]') : null;
-
-          cards.forEach(c => c.classList.remove('shop-drop-target'));
-          if (targetCard && targetCard !== card) {
-            targetCard.classList.add('shop-drop-target');
-          }
-        } else {
-          clearTimeout(shopLongPressTimer);
-        }
-      }, { passive: false });
-
-      card.addEventListener('touchend', (e) => {
-        clearTimeout(shopLongPressTimer);
-        if (draggedLocIdx !== null && shopGhostEl) {
-          const touch = e.changedTouches[0];
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetCard = targetEl ? targetEl.closest('.shopping-card[data-loc-idx]') : null;
-
-          if (targetCard) {
-            const targetIdx = parseInt(targetCard.dataset.locIdx, 10);
-            if (!isNaN(targetIdx) && targetIdx !== draggedLocIdx) {
-              reorderShoppingLocations(draggedLocIdx, targetIdx);
-            }
-          }
-
-          if (shopGhostEl && shopGhostEl.parentNode) {
-            shopGhostEl.parentNode.removeChild(shopGhostEl);
-          }
-          shopGhostEl = null;
-          draggedLocIdx = null;
-          cards.forEach(c => c.classList.remove('shop-drop-target', 'dragging-shop'));
-        }
+      bindDragSort(card, card, '.shopping-card[data-loc-idx]', 'dragging-shop', 'shop-drop-target', target => {
+        reorderShoppingLocations(Number(card.dataset.locIdx), Number(target.dataset.locIdx));
       });
     });
   }
 
   function initSubitemDragAndDrop(locId) {
-    const subCards = document.querySelectorAll('.subitem-card');
-    let draggedItemIdx = null;
-    let subTimer = null;
-    let subGhostEl = null;
-
-    subCards.forEach(card => {
-      card.addEventListener('touchstart', (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.classList.contains('checkbox-custom')) return;
-
-        const idx = parseInt(card.dataset.itemIdx, 10);
-        subTimer = setTimeout(() => {
-          draggedItemIdx = idx;
-          if (navigator.vibrate) navigator.vibrate(50);
-          card.classList.add('dragging-shop');
-
-          subGhostEl = card.cloneNode(true);
-          subGhostEl.style.position = 'fixed';
-          subGhostEl.style.pointerEvents = 'none';
-          subGhostEl.style.zIndex = '9999';
-          subGhostEl.style.opacity = '0.9';
-          subGhostEl.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
-          subGhostEl.style.width = card.offsetWidth + 'px';
-          document.body.appendChild(subGhostEl);
-        }, 300);
-      }, { passive: true });
-
-      card.addEventListener('touchmove', (e) => {
-        const touch = e.touches[0];
-        if (subGhostEl) {
-          e.preventDefault();
-          subGhostEl.style.left = (touch.clientX - 40) + 'px';
-          subGhostEl.style.top = (touch.clientY - 20) + 'px';
-
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetSub = targetEl ? targetEl.closest('.subitem-card') : null;
-
-          subCards.forEach(c => c.classList.remove('shop-drop-target'));
-          if (targetSub && targetSub !== card) {
-            targetSub.classList.add('shop-drop-target');
-          }
-        } else {
-          clearTimeout(subTimer);
-        }
-      }, { passive: false });
-
-      card.addEventListener('touchend', (e) => {
-        clearTimeout(subTimer);
-        if (draggedItemIdx !== null && subGhostEl) {
-          const touch = e.changedTouches[0];
-          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-          const targetSub = targetEl ? targetEl.closest('.subitem-card') : null;
-
-          if (targetSub) {
-            const targetIdx = parseInt(targetSub.dataset.itemIdx, 10);
-            if (!isNaN(targetIdx) && targetIdx !== draggedItemIdx) {
-              reorderShoppingSubitems(locId, draggedItemIdx, targetIdx);
-              renderLocationDetailModal(locId);
-            }
-          }
-
-          if (subGhostEl && subGhostEl.parentNode) {
-            subGhostEl.parentNode.removeChild(subGhostEl);
-          }
-          subGhostEl = null;
-          draggedItemIdx = null;
-          subCards.forEach(c => c.classList.remove('shop-drop-target', 'dragging-shop'));
-        }
+    document.querySelectorAll('#detail-items-container .subitem-card').forEach(card => {
+      const grip = card.querySelector('.drag-handle-subitem');
+      if (!grip) return;
+      grip.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); });
+      bindDragSort(card, grip, '#detail-items-container .subitem-card', 'dragging-shop', 'shop-drop-target', target => {
+        reorderShoppingSubitems(locId, Number(card.dataset.itemIdx), Number(target.dataset.itemIdx));
       });
     });
   }
@@ -3174,7 +3304,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeModal('modal-shopping-detail');
 
-    document.getElementById('modal-shopping-title').innerText = '🛍️ 編輯購物地點資訊';
+    window.uiSetIconText(document.getElementById("modal-shopping-title"), "shoppingBag", "編輯購物地點資訊");
     document.getElementById('edit-shop-loc-id').value = loc.id;
     document.getElementById('shop-location').value = loc.location || '';
     document.getElementById('shop-category').value = loc.category || '購物';
@@ -3200,6 +3330,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.openLocationDetailModal = function(locId) {
+    currentLocationDetailId = locId;
     window.currentLocationDetailId = locId;
     renderLocationDetailModal(locId);
     window.openModal('modal-shopping-detail');
@@ -3209,9 +3340,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const loc = tripData.shopping.find(s => s.id === locId);
     if (!loc) return;
 
+    currentLocationDetailId = loc.id;
     window.currentLocationDetailId = loc.id;
-    document.getElementById('detail-location-name').innerText = `📍 ${loc.location}`;
-    document.getElementById('detail-location-note').innerText = loc.note ? `💡 ${loc.note}` : '點擊空白處可編輯，長按可拖拉排序';
+    window.uiSetIconText(document.getElementById("detail-location-name"), "mapPin", loc.location, "travel");
+    window.uiSetIconText(document.getElementById("detail-location-note"), loc.note ? "lightbulb" : null, loc.note || "點擊空白處可編輯，長按可拖拉排序");
 
     const editHeaderBtn = document.getElementById('detail-header-edit-btn');
     if (editHeaderBtn) {
@@ -3235,29 +3367,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const titleHtml = isBought
         ? `<s style="opacity:0.55;">${item.name}</s>`
-        : `<span style="font-weight:700;">${item.name}</span>`;
+        : `<span style="font-weight:600;">${item.name}</span>`;
 
       return `
-        <div class="shopping-card subitem-card" data-subitem-id="${item.id}" data-item-idx="${itemIdx}" data-loc-id="${loc.id}" draggable="true" style="margin-bottom:12px; display:flex; align-items:center; gap:10px; padding:10px 12px; cursor:pointer; ${isBought ? 'opacity:0.7; background:#F8FAFC;' : ''}">
+        <div class="shopping-card subitem-card" data-subitem-id="${item.id}" data-item-idx="${itemIdx}" data-loc-id="${loc.id}" draggable="true" style="margin-bottom:12px; display:flex; align-items:center; gap:10px; padding:10px 12px; cursor:pointer; ${isBought ? 'background:var(--ui-selected);' : ''}">
           <!-- Square Checkbox on FAR LEFT -->
           <div class="checkbox-custom ${isBought ? 'checked' : ''}" onclick="event.stopPropagation(); toggleSubitemBought('${loc.id}', '${item.id}')" title="點擊勾選/取消已買" style="cursor:pointer; flex-shrink:0;">${isBought ? '✓' : ''}</div>
 
           <!-- Product Image -->
-          <img src="${item.image}" class="shopping-img" style="width:52px; height:52px; border-radius:10px; object-fit:cover; flex-shrink:0;" alt="${item.name}" onclick="event.stopPropagation(); openLightbox('${item.image}', '${item.name} | 📍 ${loc.location}')" title="點擊放大圖片" />
+          <img src="${item.image}" class="shopping-img" style="width:52px; height:52px; border-radius:10px; object-fit:cover; flex-shrink:0;" alt="${item.name}" onclick="event.stopPropagation(); openLightbox('${item.image}', '${item.name} | ${loc.location}')" title="點擊放大圖片" />
 
           <!-- Details (Clicking anywhere on blank/text opens edit directly without pencil icon) -->
           <div class="shopping-details" style="flex:1;" onclick="editSubitem('${loc.id}', '${item.id}')" title="點擊編輯商品說明">
-            <div class="flex-between" style="margin-bottom:2px;">
+            <div class="flex-between shopping-product-heading" style="margin-bottom:2px;">
               <div class="shopping-title">${titleHtml}</div>
-              <span class="badge ${isBought ? 'badge-spot' : 'badge-hotel'}" style="${isBought ? 'background:#10B981; color:#FFF;' : 'background:#E2E8F0; color:#64748B;'} font-size:0.68rem; padding:2px 6px;">${isBought ? '✅ 已買' : '⏳ 未買'}</span>
+              <span class="badge shopping-purchase-status ${isBought ? 'badge-spot' : 'badge-hotel'}" style="${isBought ? 'background:var(--ui-accent-light); color:var(--ui-accent-text);' : 'background:var(--ui-surface); color:var(--ui-muted);'} font-size:0.68rem; padding:2px 6px;">${isBought ? window.uiIcon("check", "active") + " 已買" : window.uiIcon("clock") + " 未買"}</span>
             </div>
-            ${item.note ? `<div style="font-size:0.72rem; color:var(--kyoto-muted);">💡 ${item.note}</div>` : ''}
+            ${item.note ? `<div style="font-size:0.72rem; color:var(--kyoto-muted);">${window.uiIcon("lightbulb", "muted")} ${item.note}</div>` : ''}
             <div class="flex-between" style="margin-top:4px;">
-              <div class="shopping-price" style="font-size:0.88rem; font-weight:800; color:var(--maple-crimson);">¥ ${item.priceJPY.toLocaleString()}</div>
+              <div class="shopping-price" style="font-size:0.88rem; font-weight:600; color:var(--ui-accent-text);">¥ ${item.priceJPY.toLocaleString()}</div>
               <div style="display:flex; gap:6px; align-items:center;">
-                <span class="drag-handle-subitem" style="font-size:0.85rem; opacity:0.35; cursor:grab;" title="長按拖拉移動商品順序">≡</span>
-                <button onclick="event.stopPropagation(); deleteSubitem('${loc.id}', '${item.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem; padding:2px 4px;" title="刪除商品">🗑️</button>
+                <span class="drag-handle-subitem ui-drag-grip" style="cursor:grab;" title="長按拖拉移動商品順序">${window.uiIcon("grip", "muted")}</span>
+                <button onclick="event.stopPropagation(); deleteSubitem('${loc.id}', '${item.id}')" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:0.85rem; padding:2px 4px;" title="刪除商品">${window.uiIcon("trash", "danger")}</button>
               </div>
+            </div>
+            <div class="subitem-reorder-controls" aria-label="商品排序">
+              <button type="button" class="btn-secondary" onclick="event.stopPropagation(); moveShoppingSubitem('${loc.id}', '${item.id}', -1)" ${itemIdx === 0 ? 'disabled' : ''} aria-label="上移商品">上移</button>
+              <button type="button" class="btn-secondary" onclick="event.stopPropagation(); moveShoppingSubitem('${loc.id}', '${item.id}', 1)" ${itemIdx === loc.items.length - 1 ? 'disabled' : ''} aria-label="下移商品">下移</button>
             </div>
           </div>
         </div>

@@ -4,22 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>一起在日本追楓的日子 - Kansai Vibes '26</title>
-  <meta name="description" content="專為手機設計的京都賞楓旅遊助手，包含航班資訊、自然語言智慧記帳、分日行程分類、行李檢查清單與帶照片的購物願望清單。" />
-  <meta name="theme-color" content="#9E2A2B" />
+  <meta name="description" content="適用手機與電腦的京都賞楓旅遊助手，包含航班資訊、自然語言智慧記帳、分日行程分類、行李檢查清單與帶照片的購物願望清單。" />
+  <meta name="theme-color" content="#F7F8F5" />
 
   <!-- PWA & Mobile Web App Settings -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="KansaiVibes26" />
-  <link rel="icon" type="image/png" href="icon.png" />
-  <link rel="shortcut icon" href="icon.png" type="image/png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icon.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/favicon-48.png" />
+  <link rel="shortcut icon" href="assets/icons/favicon.ico" type="image/x-icon" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png" />
   <link rel="manifest" href="manifest.json" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="css/styles.css" />
@@ -39,19 +41,19 @@
     <header class="header-kyoto">
       <div class="header-top">
         <div class="trip-badge" style="display:flex; align-items:center; gap:6px; padding:3px 10px 3px 6px;">
-          <img src="icon.png" style="width:20px; height:20px; object-fit:contain;" alt="Logo" />
+          <img src="assets/icons/app-icon-192.png" style="width:20px; height:20px; object-fit:contain;" alt="Logo" />
           <span>Kansai Vibes '26</span>
         </div>
         <div class="header-actions">
-          <button id="firebase-sync-btn" class="icon-btn-ghost" title="🔥 Firebase 雲端即時同步設定">🔥</button>
-          <button id="export-data-modal-btn" class="icon-btn-ghost" title="📤 匯出 CSV / JSON">📤</button>
-          <button id="import-data-modal-btn" class="icon-btn-ghost" title="📥 匯入 CSV / JSON">📥</button>
+          <button id="firebase-sync-btn" class="icon-btn-ghost" title="Firebase 雲端即時同步設定"><svg class="ui-icon ui-icon--active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 16a4 4 0 0 0-1-7.9A6 6 0 0 0 7 7a4.5 4.5 0 0 0 0 9Z"/></svg></button>
+          <button id="export-data-modal-btn" class="icon-btn-ghost" title="匯出 CSV / JSON"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V3m-4 4 4-4 4 4M4 16v5h16v-5"/></svg></button>
+          <button id="import-data-modal-btn" class="icon-btn-ghost" title="匯入 CSV / JSON"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></svg></button>
         </div>
       </div>
       <div class="header-title-group">
         <h1>一起在日本追楓的日子</h1>
         <div class="header-subtitle">
-          <span>📅 2026/11/20 ~ 11/29</span>
+          <span><svg class="ui-icon ui-icon--travel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg> 2026/11/20 ~ 11/29</span>
           <span>Otis & Irene</span>
         </div>
       </div>
@@ -70,7 +72,7 @@
 
         <!-- Hotels / Accommodation Section -->
         <div class="flex-between" style="margin:20px 0 10px 0;">
-          <div style="font-weight:800; font-size:1.05rem; color:var(--maple-crimson);">🏨 住宿資訊</div>
+          <div class="flight-section-title" style="font-size:1.05rem;"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18v3m18-3v3M3 18V7h18v11ZM3 12h18M7 7v5m10-5v5"/></svg> 住宿資訊</div>
           <button id="add-hotel-btn" class="btn-secondary" style="padding:4px 12px; font-size:0.78rem;">+ 新增住宿</button>
         </div>
         <div id="hotel-list-container"></div>
@@ -78,18 +80,21 @@
 
       <!-- ==================== TAB 2: SMART EXPENSE TRACKER ==================== -->
       <section id="tab-expense" class="tab-section">
+        <div class="accounting-page-actions">
+          <button id="add-expense-modal-btn" type="button" class="btn-secondary accounting-add-button">新增記帳</button>
+        </div>
         <div id="google-sheet-expense-control-container" style="margin-bottom:14px;"></div>
         <!-- Natural Language Quick Expense Input Box -->
         <div class="nlp-banner-card">
-          <div style="font-size:0.95rem; font-weight:800; color:var(--maple-crimson); display:flex; align-items:center; gap:6px;">
-            🗣️ 智慧語音/文字自動記帳
+          <div class="accounting-section-title" style="font-size:0.95rem; display:flex; align-items:center; gap:6px;">
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z"/><path d="M7 8h10M7 12h7"/></svg> 智慧語音/文字自動記帳
           </div>
           <div style="font-size:0.76rem; color:var(--kyoto-muted); margin-top:2px;">
             例：「清水寺御守 2000日圓 刷熊本熊 ❤️」或「嵐山湯豆腐 6500日幣 現金 🐷」
           </div>
           <div class="nlp-input-wrapper">
             <input type="text" id="nlp-expense-input" class="nlp-input-field" placeholder="輸入或貼上一段消費紀錄..." />
-            <button id="nlp-submit-btn" class="nlp-submit-btn" title="智慧解析">⚡</button>
+            <button id="nlp-submit-btn" class="nlp-submit-btn" title="智慧解析"><svg class="ui-icon ui-icon--active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 2.7 6.3L21 12l-6.3 2.7L12 21l-2.7-6.3L3 12l6.3-2.7ZM20 2v4m-2-2h4"/></svg></button>
           </div>
           <!-- Quick Tag Chips Samples -->
           <div class="nlp-tags-help">
@@ -103,71 +108,70 @@
         </div>
 
         <!-- Itinerary Budget Summary Banner Card -->
-        <div id="itinerary-budget-summary-card" class="kyoto-card" style="margin-bottom:14px; background:linear-gradient(135deg, #FFFDF9 0%, #FFF8EE 100%); border:1.5px solid rgba(229,169,60,0.35);">
+        <div id="itinerary-budget-summary-card" class="kyoto-card" style="margin-bottom:14px;">
           <div class="flex-between" style="margin-bottom:8px;">
-            <div style="font-weight:800; font-size:0.95rem; color:var(--amber-gold); display:flex; align-items:center; gap:6px;">
-              📊 行程規劃預估總預算
+            <div class="accounting-section-title" style="font-size:0.95rem; display:flex; align-items:center; gap:6px;">
+              <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18M7 16v-4m5 4V8m5 8V5"/></svg> 行程規劃預估總預算
             </div>
             <span id="it-budget-count" style="font-size:0.72rem; color:var(--kyoto-muted);">共 0 筆預算項目</span>
           </div>
           <!-- 3-Column Grid for Pure JPY / Pure TWD / Combined TWD -->
-          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-bottom:8px;">
-            <div class="parsed-item" style="background:#FFF5F5; padding:6px 8px;">
+          <div class="statistic-summary-grid" style="display:grid; gap:6px; margin-bottom:8px;">
+            <div class="parsed-item accounting-stat-cell" style="padding:6px 8px;">
               <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">預估純日圓 (¥)</span>
-              <div id="it-budget-total-jpy" style="font-size:0.95rem; font-weight:800; color:var(--maple-crimson); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">¥ 0</div>
+              <div id="it-budget-total-jpy" class="statistic-amount accounting-amount">¥ 0</div>
             </div>
-            <div class="parsed-item" style="background:#F0FFF4; padding:6px 8px;">
+            <div class="parsed-item accounting-stat-cell" style="padding:6px 8px;">
               <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">預估純台幣 ($)</span>
-              <div id="it-budget-total-twd-only" style="font-size:0.95rem; font-weight:800; color:#059669; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">NT$ 0</div>
+              <div id="it-budget-total-twd-only" class="statistic-amount accounting-amount">NT$ 0</div>
             </div>
-            <div class="parsed-item" style="background:#FFF9EF; padding:6px 8px;">
+            <div class="parsed-item accounting-stat-cell" style="padding:6px 8px;">
               <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">折合台幣加總</span>
-              <div id="it-budget-total-twd" style="font-size:0.95rem; font-weight:800; color:var(--amber-gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">NT$ 0</div>
+              <div id="it-budget-total-twd" class="statistic-amount accounting-amount">NT$ 0</div>
             </div>
           </div>
           <div style="font-size:0.72rem; color:var(--kyoto-muted); line-height:1.4;">
-            💡 輸入 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">¥</code> 計入純日圓、輸入 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">$</code> 或 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">NT$</code> 計入純台幣，算式（如 1000*2）會自動計算。
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18h6m-5 3h4M9 15a6 6 0 1 1 6 0v3H9Z"/></svg> 輸入 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">¥</code> 計入純日圓、輸入 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">$</code> 或 <code style="background:rgba(0,0,0,0.05); padding:1px 4px; border-radius:4px; font-family:inherit;">NT$</code> 計入純台幣，算式（如 1000*2）會自動計算。
           </div>
         </div>
 
         <!-- Expense Dashboard Overview Card -->
         <div class="kyoto-card">
           <div class="card-title-row">
-            <div class="card-title">💰 支出統計概覽</div>
-            <button id="add-expense-modal-btn" onclick="window.openAddExpenseModal()" class="btn-secondary" style="padding:6px 12px; font-size:0.78rem;">+ 手動新增</button>
+            <div class="card-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 8V5a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h15v12H6a3 3 0 0 1-3-3V6"/><path d="M21 12h-5v5h5"/></svg> 支出統計概覽</div>
           </div>
           <!-- Row 1: JPY / TWD pure totals / combined -->
-          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-bottom:10px;">
-            <div class="parsed-item" style="background:#FFF5F5; padding:6px 8px;">
+          <div class="statistic-summary-grid" style="display:grid; gap:6px; margin-bottom:10px;">
+            <div class="parsed-item accounting-stat-cell" style="padding:6px 8px;">
               <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">純日圓支出 (¥)</span>
-              <div id="exp-total-jpy" style="font-size:0.95rem; font-weight:800; color:var(--maple-crimson); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">0</div>
+              <div id="exp-total-jpy" class="statistic-amount accounting-amount">0</div>
             </div>
-            <div class="parsed-item" style="background:#F0FFF4; padding:6px 8px;">
+            <div class="parsed-item accounting-stat-cell" style="padding:6px 8px;">
               <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">純台幣支出 (NT$)</span>
-              <div id="exp-total-twd-only" style="font-size:0.95rem; font-weight:800; color:#059669; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">0</div>
+              <div id="exp-total-twd-only" class="statistic-amount accounting-amount">0</div>
             </div>
-            <div class="parsed-item" style="background:#FFF9EF; padding:6px 8px;">
+            <div class="parsed-item accounting-stat-cell" style="padding:6px 8px;">
               <span class="parsed-label" style="font-size:0.68rem; white-space:nowrap;">折合台幣加總 (NT$)</span>
-              <div id="exp-total-twd" style="font-size:0.95rem; font-weight:800; color:var(--amber-gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">0</div>
+              <div id="exp-total-twd" class="statistic-amount accounting-amount">0</div>
             </div>
           </div>
           <!-- Row 2: Per-payer breakdown -->
           <div class="parsed-grid" style="margin-bottom:10px;">
-            <div class="parsed-item"><span class="parsed-label">❤️ 小計</span><div id="exp-me-total" class="parsed-val">NT$ 0</div></div>
-            <div class="parsed-item"><span class="parsed-label">🐷 小計</span><div id="exp-husband-total" class="parsed-val">NT$ 0</div></div>
+            <div class="parsed-item"><span class="parsed-label"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg> 小計</span><div id="exp-me-total" class="parsed-val">NT$ 0</div></div>
+            <div class="parsed-item"><span class="parsed-label"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M6 20a6 6 0 0 1 12 0"/></svg> 小計</span><div id="exp-husband-total" class="parsed-val">NT$ 0</div></div>
           </div>
           <!-- Row 3: Card usage & remaining limits -->
           <div class="flex-between" style="margin-bottom:8px; cursor:pointer;" onclick="window.toggleCardLimitsAccordion()">
-            <div style="font-size:0.78rem; font-weight:700; color:var(--kyoto-dark); display:flex; align-items:center; gap:6px;">
-              💳 各卡使用額度 <span id="card-limits-toggle-icon" style="font-size:0.72rem; color:var(--kyoto-muted); transition:transform 0.2s;">▼</span>
+            <div class="accounting-section-title" style="font-size:0.78rem; display:flex; align-items:center; gap:6px;">
+              <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20M6 15h3"/></svg> 各卡使用額度 <span id="card-limits-toggle-icon" style="font-size:0.72rem; color:var(--kyoto-muted); transition:transform 0.2s;">▼</span>
             </div>
-            <button onclick="event.stopPropagation(); window.openCardLimitModal()" class="btn-secondary" style="padding:2px 8px; font-size:0.72rem; border-radius:6px; border:1px solid rgba(16,185,129,0.3); color:#047857;">⚙️ 管理卡片與額度</button>
+            <button onclick="event.stopPropagation(); window.openCardLimitModal()" class="btn-secondary" style="padding:2px 8px; font-size:0.72rem; border-radius:6px;"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> 管理卡片與額度</button>
           </div>
           <div id="exp-card-limits-container" style="display:none; flex-direction:column; gap:6px;"></div>
         </div>
 
         <!-- Expense History List -->
-        <div style="font-weight:700; font-size:0.95rem; margin-bottom:10px; color:var(--kyoto-dark);">📝 消費歷史明細</div>
+        <div class="accounting-section-title" style="font-size:0.95rem; margin-bottom:10px;"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M3 7h4m-4 5h4m-4 5h4m6-10h4m-4 5h4"/></svg> 消費歷史明細</div>
         <div id="expense-list-container"></div>
       </section>
 
@@ -181,11 +185,23 @@
         <!-- Category Filter Chips -->
         <div id="itinerary-category-chips" class="filter-chips-scroll"></div>
 
+        <div class="itinerary-layout"><div class="itinerary-list-pane">
         <!-- Timeline Container -->
         <div id="itinerary-timeline-container" style="padding-top:10px;"></div>
 
+        </div>
+        <aside class="itinerary-map-pane kyoto-card" aria-label="當日行程 Google 地圖">
+          <div class="card-title"><svg class="ui-icon ui-icon--travel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3ZM9 3v15m6-12v15"/></svg> 當日行程地圖</div>
+          <label class="form-label" for="itinerary-map-select">選擇行程地點</label>
+          <select id="itinerary-map-select" class="form-control"></select>
+          <p id="itinerary-map-caption" class="map-caption" aria-live="polite"></p>
+          <iframe id="itinerary-map-frame" title="行程地點 Google 地圖" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+          <a id="itinerary-map-link" class="btn-secondary map-open-link" target="_blank" rel="noopener noreferrer">在 Google Maps 開啟 ↗</a>
+          <div id="itinerary-edit-panel-host" class="itinerary-edit-panel-host" hidden></div>
+        </aside>
+        </div>
         <!-- Floating Add Itinerary Button -->
-        <button id="add-itinerary-modal-btn" class="btn-floating-add" title="新增行程">+</button>
+        <button id="add-itinerary-modal-btn" type="button" class="btn-floating-add itinerary-outline-button" title="新增行程" aria-label="新增行程">+</button>
       </section>
 
       <!-- ==================== TAB 4: PACKING CHECKLIST ==================== -->
@@ -193,14 +209,13 @@
         <!-- Overall Progress Card -->
         <div class="kyoto-card" style="margin-bottom:16px;">
           <div class="flex-between">
-            <div class="card-title">🎒 行李準備進度</div>
-            <span id="packing-progress-text" style="font-size:0.8rem; font-weight:700; color:var(--maple-crimson);">0 / 0 已打包 (0%)</span>
+            <div class="card-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="6" width="14" height="14" rx="2"/><path d="M9 6V3h6v3M9 10v6m6-6v6M8 20v2m8-2v2"/></svg> 行李準備進度</div>
+            <span id="packing-progress-text" style="font-size:0.8rem; font-weight:400; color:var(--ui-muted);">0 / 0 已打包 (0%)</span>
           </div>
           <div class="progress-bar-bg">
             <div id="packing-progress-fill" class="progress-bar-fill" style="width:0%;"></div>
           </div>
           <div style="display:flex; gap:8px; margin-top:10px;">
-            <button id="add-packing-item-btn" class="btn-secondary" style="flex:1; padding:6px; font-size:0.78rem;">+ 新增行李項目</button>
             <button id="add-packing-cat-btn" class="btn-secondary" style="flex:1; padding:6px; font-size:0.78rem;">+ 新增分類</button>
           </div>
         </div>
@@ -212,7 +227,7 @@
       <!-- ==================== TAB 5: SHOPPING WISHLIST ==================== -->
       <section id="tab-shopping" class="tab-section">
         <div class="flex-between" style="margin-bottom:10px;">
-          <div style="font-weight:800; font-size:1.05rem; color:var(--maple-crimson);">🛍️ 購物清單</div>
+          <div class="shopping-section-title" style="font-size:1.05rem;"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7h18l-1 14H4ZM8 7V5a4 4 0 0 1 8 0v2"/></svg> 購物清單</div>
           <span style="font-size:0.75rem; color:var(--kyoto-muted);">點擊卡片可檢視及新增商品</span>
         </div>
 
@@ -223,7 +238,7 @@
         <div id="shopping-grid-container" class="shopping-grid"></div>
 
         <!-- Floating Add Shopping Button -->
-        <button id="add-shopping-modal-btn" onclick="window.openAddShoppingModal()" class="btn-floating-add" title="新增購物地點">+</button>
+        <button id="add-shopping-modal-btn" onclick="window.openAddShoppingModal()" class="btn-floating-add" title="新增購物地點"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button>
       </section>
 
     </main>
@@ -232,23 +247,23 @@
     <div class="bottom-nav-container">
       <nav class="bottom-nav">
         <button class="nav-item active" data-tab="flight">
-          <span class="nav-icon">✈️</span>
+          <span class="nav-icon"><svg class="ui-icon ui-icon--inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 12a2 2 0 0 1-2 2h-5l-4 7H8l2-7H5l-2 3H2l1-5-1-5h1l2 3h5L8 3h3l4 7h5a2 2 0 0 1 2 2Z"/></svg></span>
           <span>航班住宿</span>
         </button>
         <button class="nav-item" data-tab="expense">
-          <span class="nav-icon">💰</span>
+          <span class="nav-icon"><svg class="ui-icon ui-icon--inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 8V5a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h15v12H6a3 3 0 0 1-3-3V6"/><path d="M21 12h-5v5h5"/></svg></span>
           <span>智慧記帳</span>
         </button>
         <button class="nav-item" data-tab="itinerary">
-          <span class="nav-icon">🗓️</span>
+          <span class="nav-icon"><svg class="ui-icon ui-icon--inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></span>
           <span>分日行程</span>
         </button>
         <button class="nav-item" data-tab="packing">
-          <span class="nav-icon">🎒</span>
+          <span class="nav-icon"><svg class="ui-icon ui-icon--inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="6" width="14" height="14" rx="2"/><path d="M9 6V3h6v3M9 10v6m6-6v6M8 20v2m8-2v2"/></svg></span>
           <span>行李清單</span>
         </button>
         <button class="nav-item" data-tab="shopping">
-          <span class="nav-icon">🛍️</span>
+          <span class="nav-icon"><svg class="ui-icon ui-icon--inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7h18l-1 14H4ZM8 7V5a4 4 0 0 1 8 0v2"/></svg></span>
           <span>購物清單</span>
         </button>
       </nav>
@@ -258,27 +273,27 @@
     <div id="modal-export-data" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">📤 匯出資料 (CSV / Excel / JSON)</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V3m-4 4 4-4 4 4M4 16v5h16v-5"/></svg> 匯出資料 (CSV / Excel / JSON)</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <div style="font-size:0.8rem; color:var(--kyoto-muted); margin-bottom:14px; line-height:1.4;">
           可下載可在 <b>Excel / Google Sheets</b> 開啟的 CSV 報表，或 JSON 備份檔：
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <button id="btn-export-expenses-csv" class="btn-primary" style="background:#10B981;">
-            📊 匯出「記帳明細」CSV (Excel / Google Sheet 格式)
+          <button id="btn-export-expenses-csv" class="btn-primary">
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18M7 16v-4m5 4V8m5 8V5"/></svg> 匯出「記帳明細」CSV (Excel / Google Sheet 格式)
           </button>
-          <button id="btn-export-itinerary-csv" class="btn-primary" style="background:#10B981;">
-            📊 匯出「分日行程」CSV (Excel / Google Sheet 格式)
+          <button id="btn-export-itinerary-csv" class="btn-primary">
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18M7 16v-4m5 4V8m5 8V5"/></svg> 匯出「分日行程」CSV (Excel / Google Sheet 格式)
           </button>
           <button id="btn-export-expenses-json" class="btn-secondary">
-            💰 匯出「記帳明細」 (JSON)
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 8V5a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h15v12H6a3 3 0 0 1-3-3V6"/><path d="M21 12h-5v5h5"/></svg> 匯出「記帳明細」 (JSON)
           </button>
           <button id="btn-export-itinerary-json" class="btn-secondary">
-            🗓️ 匯出「分日行程」 (JSON)
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg> 匯出「分日行程」 (JSON)
           </button>
-          <button id="btn-export-combined-json" class="btn-primary" style="background:var(--maple-crimson);">
-            📦 匯出「記帳 + 行程」組合備份 (JSON)
+          <button id="btn-export-combined-json" class="btn-primary">
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 9 5v9l-9 5-9-5V8ZM3 8l9 5 9-5m-9 5v9M7 5l10 6"/></svg> 匯出「記帳 + 行程」組合備份 (JSON)
           </button>
         </div>
       </div>
@@ -288,8 +303,8 @@
     <div id="modal-import-data" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">📥 匯入資料 (CSV / JSON)</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></svg> 匯入資料 (CSV / JSON)</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-import-data">
           <div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.4;">
@@ -309,17 +324,17 @@
           <div class="form-group">
             <label class="form-label">匯入目標與方式</label>
             <select id="import-type-select" class="form-control">
-              <option value="auto">⚡ 自動辨識 (CSV 或 JSON)</option>
-              <option value="expense">💰 指定匯入至「記帳明細」</option>
-              <option value="itinerary">🗓️ 指定匯入至「分日行程」</option>
+              <option value="auto">自動辨識 (CSV 或 JSON)</option>
+              <option value="expense">指定匯入至「記帳明細」</option>
+              <option value="itinerary">指定匯入至「分日行程」</option>
             </select>
           </div>
 
           <div class="form-group">
             <label class="form-label">寫入模式</label>
             <select id="import-mode" class="form-control">
-              <option value="merge">➕ 合併模式 (保留現有資料，自動增補)</option>
-              <option value="replace">🔄 覆蓋模式 (全面替換舊資料)</option>
+              <option value="merge">合併模式 (保留現有資料，自動增補)</option>
+              <option value="replace">覆蓋模式 (全面替換舊資料)</option>
             </select>
           </div>
 
@@ -332,18 +347,18 @@
     <div id="modal-firebase-config" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">🔥 Firebase 雲端資料庫設定</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 16a4 4 0 0 0-1-7.9A6 6 0 0 0 7 7a4.5 4.5 0 0 0 0 9Z"/></svg> Firebase 雲端資料庫設定</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-firebase-config">
           <div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.4;">
-            設定 Firebase Realtime Database / Firestore 免費資料庫，讓您與老公 (❤️ & 🐷) 在兩台手機上能夠即時同步更新行程與記帳！
+            設定 Firebase Realtime Database / Firestore 免費資料庫，讓您與老公 (<svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg> 我 & <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M6 20a6 6 0 0 1 12 0"/></svg> 老公) 在兩台手機上能夠即時同步更新行程與記帳！
           </div>
           <div class="form-group">
             <label class="form-label">Firebase Database URL / Project ID</label>
             <input type="text" id="fb-project-id" class="form-control" placeholder="https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app" value="https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app" />
           </div>
-          <div id="fb-status-message" style="font-size:0.78rem; font-weight:700; margin-bottom:8px;"></div>
+          <div id="fb-status-message" style="font-size:0.78rem; font-weight:500; margin-bottom:8px;"></div>
           <button type="submit" class="btn-primary">儲存並連結雲端資料庫</button>
         </form>
       </div>
@@ -353,8 +368,8 @@
     <div id="modal-edit-flight" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-flight-title" class="modal-title">✈️ 編輯航班資訊</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-flight-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 12a2 2 0 0 1-2 2h-5l-4 7H8l2-7H5l-2 3H2l1-5-1-5h1l2 3h5L8 3h3l4 7h5a2 2 0 0 1 2 2Z"/></svg> 編輯航班資訊</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-edit-flight">
           <input type="hidden" id="flight-type" value="outbound" />
@@ -401,8 +416,8 @@
     <div id="modal-expense" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-expense-title" class="modal-title">💰 新增記帳項目</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-expense-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 8V5a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h15v12H6a3 3 0 0 1-3-3V6"/><path d="M21 12h-5v5h5"/></svg> 新增記帳項目</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-add-expense" onsubmit="window.submitAddExpenseForm(event); return false;">
           <input type="hidden" id="exp-id" value="" />
@@ -433,8 +448,8 @@
             <div class="form-group" style="flex:1;">
               <label class="form-label">付款人</label>
               <select id="exp-payer" class="form-control">
-                <option value="❤️">❤️ 我</option>
-                <option value="🐷">🐷 老公</option>
+                <option value="❤️">我</option>
+                <option value="🐷">老公</option>
               </select>
             </div>
           </div>
@@ -457,8 +472,8 @@
     <div id="modal-hotel" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-hotel-title" class="modal-title">🏨 新增/編輯住宿</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-hotel-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18v3m18-3v3M3 18V7h18v11ZM3 12h18M7 7v5m10-5v5"/></svg> 新增/編輯住宿</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-hotel">
           <input type="hidden" id="hotel-id" value="" />
@@ -469,9 +484,9 @@
 
           <!-- Interactive Date Range Picker Trigger & Embedded Calendar -->
           <div class="form-group">
-            <label class="form-label">📅 入住與退房日期 (點擊日曆區選取起訖)</label>
+            <label class="form-label"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg> 入住與退房日期 (點擊日曆區選取起訖)</label>
             <button type="button" id="hotel-date-range-trigger" class="form-control" style="text-align:left; display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; cursor:pointer;">
-              <span style="font-size:0.9rem; font-weight:700; color:var(--maple-crimson);" id="display-date-range-label">2026-11-20 ➔ 2026-11-29</span>
+              <span style="font-size:0.9rem; font-weight:500; color:var(--ui-accent-text);" id="display-date-range-label">2026-11-20 ➔ 2026-11-29</span>
               <span id="display-nights-badge" class="badge badge-spot">9 晚</span>
             </button>
             <input type="hidden" id="hotel-checkin" value="2026-11-20" />
@@ -490,7 +505,7 @@
             </div>
             <div id="cal-days-grid" class="calendar-days-grid"></div>
             <div style="font-size:0.75rem; color:var(--kyoto-muted); text-align:center; margin-top:8px;">
-              💡 請在上方日曆點選「入住日期」與「退房日期」
+              <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18h6m-5 3h4M9 15a6 6 0 1 1 6 0v3H9Z"/></svg> 請在上方日曆點選「入住日期」與「退房日期」
             </div>
           </div>
 
@@ -511,10 +526,12 @@
     <div id="modal-itinerary" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-itinerary-title" class="modal-title">🗓️ 新增/編輯行程景點</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-itinerary-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg> 新增/編輯行程景點</div>
+          <div id="itinerary-editor-context" class="itinerary-editor-context" hidden></div>
+          <button id="itinerary-editor-close" class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-add-itinerary">
+          <div class="itinerary-editor-body">
           <input type="hidden" id="it-id" value="" />
           <div class="form-group">
             <label class="form-label">第幾天 (Day)</label>
@@ -532,10 +549,10 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">⏰ 行程時間區間 (10 分鐘單位)</label>
+            <label class="form-label"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 行程時間區間 (10 分鐘單位)</label>
             <div class="form-row" style="align-items:center;">
               <select id="it-time-start" class="form-control" style="flex:1;"></select>
-              <span style="font-size:0.9rem; font-weight:800; color:var(--amber-gold); padding:0 6px;">➔</span>
+              <span style="font-size:0.9rem; font-weight:400; color:var(--ui-autumn); padding:0 6px;">➔</span>
               <select id="it-time-end" class="form-control" style="flex:1;"></select>
             </div>
           </div>
@@ -551,12 +568,12 @@
           </div>
           <div class="form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <label class="form-label" style="margin:0;">💰 預估費用明細 (可新增多項)</label>
-              <button type="button" onclick="window.addItineraryCostRow()" class="btn-secondary" style="padding:3px 8px; font-size:0.75rem; border-radius:6px; background:#FFF; border:1px solid var(--amber-gold); color:var(--amber-gold);">+ 新增預算項目</button>
+              <label class="form-label" style="margin:0;"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 8V5a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h15v12H6a3 3 0 0 1-3-3V6"/><path d="M21 12h-5v5h5"/></svg> 預估費用明細 (可新增多項)</label>
+              <button type="button" onclick="window.addItineraryCostRow()" class="btn-secondary" style="padding:3px 8px; font-size:0.75rem; border-radius:6px; background:var(--ui-surface); border:1px solid var(--ui-border); color:var(--ui-accent-text);">+ 新增預算項目</button>
             </div>
             <div id="it-cost-rows-container" style="display:flex; flex-direction:column; gap:6px;"></div>
             <div style="font-size:0.72rem; color:var(--kyoto-muted); margin-top:4px;">
-              💡 提示：無輸入符號預設為日圓；金額包含 <b style="color:var(--maple-crimson);">$</b> 當作台幣 (支援算式如 <b style="color:var(--maple-crimson);">2400*2</b> 或 <b style="color:var(--maple-crimson);">$406*2</b>)。
+              <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18h6m-5 3h4M9 15a6 6 0 1 1 6 0v3H9Z"/></svg> 提示：無輸入符號預設為日圓；金額包含 <b style="color:var(--maple-crimson);">$</b> 當作台幣 (支援算式如 <b style="color:var(--maple-crimson);">2400*2</b> 或 <b style="color:var(--maple-crimson);">$406*2</b>)。
             </div>
           </div>
           <div class="form-group">
@@ -571,7 +588,11 @@
             <label class="form-label">備忘貼士</label>
             <textarea id="it-note" class="form-control" rows="3" placeholder="例：建議早起避開人潮" style="resize:vertical; min-height:72px;"></textarea>
           </div>
-          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存行程</button>
+          </div>
+          <div class="itinerary-editor-actions">
+            <button id="itinerary-editor-cancel" type="button" class="btn-secondary close-modal">取消</button>
+            <button type="submit" class="btn-primary">儲存行程</button>
+          </div>
         </form>
       </div>
     </div>
@@ -580,12 +601,16 @@
     <div id="modal-packing-item" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-packing-item-title" class="modal-title">🎒 新增行李項目</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-packing-item-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="6" width="14" height="14" rx="2"/><path d="M9 6V3h6v3M9 10v6m6-6v6M8 20v2m8-2v2"/></svg> 新增行李項目</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-add-packing-item">
           <input type="hidden" id="edit-packing-item-id" value="" />
-          <div class="form-group">
+          <div id="pk-item-context-category" class="form-group" hidden>
+            <label class="form-label">分類</label>
+            <p id="pk-item-context-category-name" class="packing-context-category"></p>
+          </div>
+          <div id="pk-item-category-group" class="form-group">
             <label class="form-label">選擇行李分類</label>
             <select id="pk-item-category-select" class="form-control">
               <!-- Dynamically filled -->
@@ -595,7 +620,10 @@
             <label class="form-label">項目名稱</label>
             <input type="text" id="pk-item-name" class="form-control" placeholder="例：賞楓必備野餐墊" required />
           </div>
-          <button type="submit" class="btn-primary" style="margin-top:10px;">儲存行李項目</button>
+          <div class="packing-item-form-actions">
+            <button type="button" class="btn-secondary close-modal">取消</button>
+            <button id="pk-item-submit" type="submit" class="btn-primary">新增</button>
+          </div>
         </form>
       </div>
     </div>
@@ -604,8 +632,8 @@
     <div id="modal-packing-cat" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-packing-cat-title" class="modal-title">📁 新增行李分類</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-packing-cat-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7V4h6l3 3h9v13H3Z"/></svg> 新增行李分類</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-add-packing-cat">
           <input type="hidden" id="edit-packing-cat-old-name" value="" />
@@ -622,8 +650,8 @@
     <div id="modal-shopping" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-shopping-title" class="modal-title">🛍️ 新增購物地點</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-shopping-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7h18l-1 14H4ZM8 7V5a4 4 0 0 1 8 0v2"/></svg> 新增購物地點</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-add-shopping" onsubmit="window.saveShoppingLocationForm(event); return false;">
           <input type="hidden" id="edit-shop-loc-id" value="" />
@@ -648,18 +676,18 @@
               <img id="shop-img-preview" src="" style="width:100px; height:100px; object-fit:cover; border-radius:12px; margin-top:8px; display:none;" alt="Preview" />
             </div>
           </div>
-          <div class="form-row">
+          <div class="form-row shopping-location-category-row">
             <div class="form-group" style="flex:1;">
               <label class="form-label">商品分類</label>
               <select id="shop-category" class="form-control">
-                <option value="購物">🛍️ 購物</option>
-                <option value="送禮">🎁 送禮</option>
-                <option value="飲食">🍱 飲食</option>
-                <option value="其他">📦 其他</option>
+                <option value="購物">購物</option>
+                <option value="送禮">送禮</option>
+                <option value="飲食">飲食</option>
+                <option value="其他">其他</option>
               </select>
             </div>
             <div class="form-group" style="flex:1;">
-              <label class="form-label">🔗 綁定已新增行程景點 (選填)</label>
+              <label class="form-label"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m10 13 4-4m-6 7-2 2a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m4 0 2-2a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/></svg> 綁定已新增行程景點 (選填)</label>
               <select id="shop-itinerary-id" class="form-control">
                 <option value="">-- 不綁定行程 --</option>
               </select>
@@ -680,19 +708,19 @@
         <div class="modal-header">
           <div style="flex:1;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <div id="detail-location-name" class="modal-title" style="font-size:1.2rem;">📍 地點名稱</div>
+              <div id="detail-location-name" class="modal-title" style="font-size:1.2rem;"><svg class="ui-icon ui-icon--travel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 地點名稱</div>
               <button id="detail-header-edit-btn" type="button" onclick="window.editCurrentLocationDetail()" class="btn-secondary" style="padding:3px 10px; font-size:0.75rem; border-radius:6px; cursor:pointer;" title="編輯此地點名稱與綁定">編輯地點</button>
             </div>
             <div id="detail-location-note" style="font-size:0.78rem; color:var(--kyoto-muted);">地點說明</div>
           </div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
 
         <!-- Items Container inside Location -->
         <div id="detail-items-container" style="margin-bottom:16px;"></div>
 
         <!-- Button to add more items to THIS location -->
-        <button id="add-item-to-this-loc-btn" onclick="window.openAddSubitemModal()" class="btn-primary" style="background:var(--kyoto-dark); cursor:pointer;">
+        <button id="add-item-to-this-loc-btn" onclick="window.openAddSubitemModal()" class="btn-primary" style="cursor:pointer;">
           + 新增商品至此地點
         </button>
       </div>
@@ -702,8 +730,8 @@
     <div id="modal-add-item-to-loc" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div id="modal-add-item-title" class="modal-title">🛍️ 新增商品</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div id="modal-add-item-title" class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7h18l-1 14H4ZM8 7V5a4 4 0 0 1 8 0v2"/></svg> 新增商品</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-add-item-to-loc" onsubmit="window.saveSubitemForm(event); return false;">
           <input type="hidden" id="subitem-loc-id" value="" />
@@ -733,8 +761,8 @@
     <div id="modal-edit-subitem" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">✏️ 編輯商品資訊</div>
-          <button class="icon-btn-ghost close-modal" style="color:#000;">✕</button>
+          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg> 編輯商品資訊</div>
+          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-edit-subitem">
           <input type="hidden" id="edit-subitem-loc-id" value="" />
@@ -765,17 +793,17 @@
     <div id="modal-google-sheet-expense" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">📋 貼上 Google 試算表記帳資料</div>
-          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-google-sheet-expense')" style="color:#000;">✕</button>
+          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6m-6 4h6"/></svg> 貼上 Google 試算表記帳資料</div>
+          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-google-sheet-expense')" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-google-sheet-expense" onsubmit="window.syncGoogleSheetExpense(event); return false;">
-          <div style="font-size:0.82rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.6; background:var(--washi-bg); padding:12px 14px; border-radius:10px; border:1px solid rgba(16,185,129,0.2);">
-            📌 <b>使用方式：</b>在 Google 試算表中選取記帳表格（含第 1 列標題列），按 <b>Ctrl+C</b> 複製，然後貼到下方文字框。
+          <div style="font-size:0.82rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.6; background:var(--ui-background); padding:12px 14px; border-radius:10px; border:1px solid var(--ui-border);">
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18h6m-5 3h4M9 15a6 6 0 1 1 6 0v3H9Z"/></svg> <b>使用方式：</b>在 Google 試算表中選取記帳表格（含第 1 列標題列），按 <b>Ctrl+C</b> 複製，然後貼到下方文字框。
           </div>
           <div class="form-group">
             <textarea id="gs-expense-csv-text" class="form-control" rows="5" placeholder="在 Google 試算表中選取記帳表格（含第1列標題）按 Ctrl+C，然後貼在此處..."></textarea>
           </div>
-          <button type="button" onclick="window.syncGoogleSheetExpense(event)" class="btn-primary" style="margin-top:10px; background:#10B981; font-weight:800; font-size:0.95rem; padding:13px;">⚡ 匯入記帳資料</button>
+          <button type="button" onclick="window.syncGoogleSheetExpense(event)" class="btn-primary accounting-csv-action" style="margin-top:10px; font-size:0.95rem; padding:13px;"><svg class="ui-icon ui-icon--active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></svg> 匯入記帳資料</button>
         </form>
       </div>
     </div>
@@ -784,17 +812,17 @@
     <div id="modal-google-sheet-itinerary" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
-          <div class="modal-title">📋 貼上 Google 試算表行程資料</div>
-          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-google-sheet-itinerary')" style="color:#000;">✕</button>
+          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6m-6 4h6"/></svg> 貼上 Google 試算表行程資料</div>
+          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-google-sheet-itinerary')" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <form id="form-google-sheet-itinerary" onsubmit="window.syncGoogleSheetItinerary(event); return false;">
-          <div style="font-size:0.82rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.6; background:var(--washi-bg); padding:12px 14px; border-radius:10px; border:1px solid rgba(16,185,129,0.2);">
-            📌 <b>使用方式：</b>在 Google 試算表中選取行程表格（含第 1 列標題列），按 <b>Ctrl+C</b> 複製，然後貼到下方文字框。
+          <div style="font-size:0.82rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.6; background:var(--ui-background); padding:12px 14px; border-radius:10px; border:1px solid var(--ui-border);">
+            <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18h6m-5 3h4M9 15a6 6 0 1 1 6 0v3H9Z"/></svg> <b>使用方式：</b>在 Google 試算表中選取行程表格（含第 1 列標題列），按 <b>Ctrl+C</b> 複製，然後貼到下方文字框。
           </div>
           <div class="form-group">
             <textarea id="gs-itinerary-csv-text" class="form-control" rows="5" placeholder="在 Google 試算表中選取行程表格（含第1列標題）按 Ctrl+C，然後貼在此處..."></textarea>
           </div>
-          <button type="button" onclick="window.syncGoogleSheetItinerary(event)" class="btn-primary" style="margin-top:10px; background:#10B981; font-weight:800; font-size:0.95rem; padding:13px;">⚡ 匯入行程資料</button>
+          <button type="button" onclick="window.syncGoogleSheetItinerary(event)" class="btn-primary" style="margin-top:10px; background:var(--ui-accent-light); color:var(--ui-accent-text); font-weight:500; font-size:0.95rem; padding:13px;"><svg class="ui-icon ui-icon--active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></svg> 匯入行程資料</button>
         </form>
       </div>
     </div>
@@ -803,47 +831,47 @@
     <div id="modal-card-limits" class="modal-overlay">
       <div class="modal-sheet" style="max-height:85vh; overflow-y:auto; width:92%; max-width:520px;">
         <div class="modal-header">
-          <div class="modal-title">💳 信用卡與回饋額度管理</div>
-          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-card-limits')" style="color:#000;">✕</button>
+          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20M6 15h3"/></svg> 信用卡與回饋額度管理</div>
+          <button class="icon-btn-ghost close-modal" onclick="window.closeModal('modal-card-limits')" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
 
         <!-- Add Card Button & Filter Chips -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;">
+        <div class="accounting-card-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;">
           <div id="card-filter-chips" style="display:flex; gap:6px;">
             <button type="button" class="chip-btn active" onclick="window.filterCardModal('all')" id="card-filter-all">全部</button>
-            <button type="button" class="chip-btn" onclick="window.filterCardModal('❤️')" id="card-filter-me">❤️ 我</button>
-            <button type="button" class="chip-btn" onclick="window.filterCardModal('🐷')" id="card-filter-hu">🐷 老公</button>
+            <button type="button" class="chip-btn" onclick="window.filterCardModal('❤️')" id="card-filter-me"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg> 我</button>
+            <button type="button" class="chip-btn" onclick="window.filterCardModal('🐷')" id="card-filter-hu"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M6 20a6 6 0 0 1 12 0"/></svg> 老公</button>
           </div>
-          <button type="button" onclick="window.toggleAddCardForm()" class="btn-primary" style="padding:6px 12px; font-size:0.78rem; background:#10B981; border-radius:8px; white-space:nowrap;">
+          <button type="button" onclick="window.toggleAddCardForm()" class="btn-primary" style="padding:6px 12px; font-size:0.78rem; border-radius:8px; white-space:nowrap;">
             + 新增卡片
           </button>
         </div>
 
         <!-- Inline Add / Edit Form -->
-        <div id="card-edit-form-box" style="display:none; background:var(--washi-bg); border:1.5px solid #10B981; border-radius:12px; padding:12px; margin-bottom:14px;">
-          <div id="card-form-title" style="font-weight:800; font-size:0.88rem; color:#047857; margin-bottom:10px;">➕ 新增信用卡</div>
+        <div id="card-edit-form-box" style="display:none; background:var(--ui-surface); border:1.5px solid var(--ui-border); border-radius:12px; padding:12px; margin-bottom:14px;">
+          <div id="card-form-title" style="font-weight:600; font-size:0.88rem; color:var(--ui-text); margin-bottom:10px;"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> 新增信用卡</div>
           <input type="hidden" id="card-edit-id" value="" />
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
             <div>
-              <label style="font-size:0.75rem; font-weight:700; color:var(--kyoto-dark);">持卡人</label>
+              <label style="font-size:0.75rem; font-weight:500; color:var(--ui-muted);">持卡人</label>
               <select id="card-edit-owner" class="form-control" style="padding:6px; font-size:0.85rem;">
-                <option value="❤️">❤️ 我</option>
-                <option value="🐷">🐷 老公</option>
+                <option value="❤️">我</option>
+                <option value="🐷">老公</option>
                 <option value="通用">通用 (現金/全支付)</option>
               </select>
             </div>
             <div>
-              <label style="font-size:0.75rem; font-weight:700; color:var(--kyoto-dark);">卡片名稱</label>
+              <label style="font-size:0.75rem; font-weight:500; color:var(--ui-muted);">卡片名稱</label>
               <input type="text" id="card-edit-name" class="form-control" placeholder="例如: 熊本熊" style="padding:6px; font-size:0.85rem;" />
             </div>
           </div>
           <div style="margin-bottom:10px;">
-            <label style="font-size:0.75rem; font-weight:700; color:var(--kyoto-dark);">刷卡/回饋上限金額 (NT$)</label>
+            <label style="font-size:0.75rem; font-weight:500; color:var(--ui-muted);">刷卡/回饋上限金額 (NT$)</label>
             <input type="number" id="card-edit-limit" class="form-control" placeholder="0 代表無上限" min="0" step="500" style="padding:6px; font-size:0.85rem;" />
           </div>
           <div style="display:flex; gap:8px; justify-content:flex-end;">
             <button type="button" onclick="window.toggleAddCardForm(false)" class="btn-secondary" style="padding:6px 12px; font-size:0.78rem;">取消</button>
-            <button type="button" onclick="window.saveCardItem()" class="btn-primary" style="padding:6px 14px; font-size:0.78rem; background:#10B981;">💾 儲存卡片</button>
+            <button type="button" onclick="window.saveCardItem()" class="btn-primary" style="padding:6px 14px; font-size:0.78rem;"><svg class="ui-icon ui-icon--active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3h15l3 3v15H3ZM7 3v6h9V3M7 21v-8h10v8"/></svg> 儲存卡片</button>
           </div>
         </div>
 
@@ -854,7 +882,7 @@
 
     <!-- ==================== MODAL 10: FULLSCREEN IMAGE LIGHTBOX ==================== -->
     <div id="modal-image-lightbox" class="lightbox-overlay">
-      <button class="icon-btn-ghost close-lightbox" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.2); font-size:1.2rem; border:none; color:#FFF; cursor:pointer;">✕</button>
+      <button class="icon-btn-ghost close-lightbox" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.2); font-size:1.2rem; border:none; color:#FFF; cursor:pointer;" aria-label="關閉圖片"><svg class="ui-icon ui-icon--inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
       <div class="lightbox-img-wrapper">
         <img id="lightbox-img-element" class="lightbox-img" src="" alt="Enlarged Photo" />
       </div>
@@ -867,6 +895,7 @@
   <script src="js/data.js"></script>
   <script src="js/nlpParser.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/ui-icons.js"></script>
   <script src="js/app.js"></script>
 
 </body>

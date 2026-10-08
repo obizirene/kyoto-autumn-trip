@@ -28,7 +28,7 @@
   --radius-lg: 24px;
   --radius-full: 9999px;
 
-  --font-main: 'Plus Jakarta Sans', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-main: "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC", serif;
   
   --transition-smooth: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -43,11 +43,12 @@
 
 body {
   font-family: var(--font-main);
+  font-weight: 400;
   background-color: var(--washi-bg);
   color: var(--kyoto-dark);
   line-height: 1.5;
   overflow-x: hidden;
-  padding-bottom: 100px;
+  padding-bottom: calc(var(--ui-bottom-content-clearance) + env(safe-area-inset-bottom, 0px));
   background-image: 
     radial-gradient(circle at 10% 20%, rgba(229, 169, 60, 0.05) 0%, transparent 20%),
     radial-gradient(circle at 90% 80%, rgba(158, 42, 43, 0.05) 0%, transparent 25%);
@@ -833,28 +834,28 @@ body {
 }
 
 .cal-day.range-start {
-  background: var(--maple-crimson) !important;
-  color: #FFFFFF !important;
+  background: var(--ui-accent-light);
+  color: var(--ui-accent-text);
   border-top-left-radius: 50%;
   border-bottom-left-radius: 50%;
 }
 
 .cal-day.range-end {
-  background: var(--maple-crimson) !important;
-  color: #FFFFFF !important;
+  background: var(--ui-accent-light);
+  color: var(--ui-accent-text);
   border-top-right-radius: 50%;
   border-bottom-right-radius: 50%;
 }
 
 .cal-day.in-range {
-  background: rgba(158, 42, 43, 0.15) !important;
-  color: var(--maple-crimson);
+  background: var(--ui-selected);
+  color: var(--ui-accent-text);
   border-radius: 0;
 }
 
 .cal-day.selected-single {
-  background: var(--maple-crimson) !important;
-  color: #FFFFFF !important;
+  background: var(--ui-accent-light);
+  color: var(--ui-accent-text);
   border-radius: 50%;
 }
 
@@ -963,7 +964,7 @@ body {
 
 .modal-title {
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--maple-crimson);
 }
 
@@ -974,7 +975,7 @@ body {
 .form-label {
   display: block;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--kyoto-dark);
   margin-bottom: 6px;
 }
@@ -1022,3 +1023,630 @@ body {
 .text-bold { font-weight: 700; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .gap-2 { gap: 8px; }
+
+/* Responsive tablet and desktop workspace; phone layout stays compact. */
+.itinerary-map-pane { display: none; }
+@media (min-width: 768px) {
+  .app-container { max-width: 1440px; padding: 0 24px; }
+  .header-kyoto { padding: 28px 32px; }
+  .header-title-group h1 { font-size: 1.8rem; }
+  .main-content { padding: 28px 8px; }
+  .bottom-nav-container { max-width: 720px; }
+  .nav-item { flex-direction: row; gap: 10px; font-size: 0.9rem; }
+  .shopping-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #hotel-list-container, #packing-checklist-container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+}
+@media (min-width: 1024px) {
+  .itinerary-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr); gap: 28px; align-items: start; }
+  .itinerary-list-pane { min-width: 0; }
+  .itinerary-map-pane { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 24px; margin: 10px 0 0; }
+  .itinerary-map-pane .form-label { margin: 0; }
+  .map-caption { color: var(--kyoto-muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+  #itinerary-map-frame { width: 100%; height: clamp(300px, 48vh, 580px); border: 0; border-radius: 14px; background: var(--washi-bg-secondary); }
+  .map-open-link { display: block; text-align: center; text-decoration: none; }
+  .shopping-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #tab-flight.active { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  #tab-flight > .flex-between, #hotel-list-container { grid-column: 1 / -1; }
+  .btn-floating-add { right: max(32px, calc((100vw - 1392px) / 2)); bottom: 104px; }
+  .modal-overlay { justify-content: flex-end; align-items: stretch; height: 100dvh; }
+  .modal-overlay .modal-sheet { width: min(520px, 45vw) !important; max-width: 520px !important; height: 100%; max-height: 100% !important; border-radius: 24px 0 0 24px; padding: 28px; animation: slideFromRight 0.28s ease; box-shadow: -12px 0 40px rgba(0,0,0,0.15); }
+  .modal-header { position: sticky; top: -28px; background: #fff; padding: 16px 0; z-index: 1; }
+  .lightbox-overlay { left: auto; right: 0; width: min(600px, 45vw); border-radius: 24px 0 0 24px; animation: slideFromRight 0.28s ease; }
+  .lightbox-img-wrapper { width: 100%; }
+}
+@keyframes slideFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay .modal-sheet, .lightbox-overlay { animation: none; }
+}
+
+/* Outline action styles are limited to itinerary controls. */
+.itinerary-outline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: var(--kyoto-charcoal);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+.itinerary-outline-icon { width: 22px; height: 22px; flex-shrink: 0; }
+.itinerary-outline-button:focus-visible { outline: 2px solid var(--kyoto-muted); outline-offset: 3px; }
+#add-itinerary-modal-btn { width: 52px; height: 52px; background: transparent; color: var(--kyoto-charcoal); box-shadow: none; }
+.itinerary-card-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.itinerary-edit-button { display: none; }
+@media (hover: hover) {
+  .itinerary-outline-button:hover, #add-itinerary-modal-btn:hover { background: rgba(30, 41, 59, 0.06); }
+}
+@media (min-width: 1024px) {
+  .itinerary-edit-button { display: inline-flex; }
+  .timeline-card.is-selected { border-color: var(--kyoto-muted); background: #F8F9FA; }
+  .timeline-card:focus-visible { outline: 2px solid var(--kyoto-muted); outline-offset: 3px; }
+}
+
+/* Phase 1: shared visual foundations and desktop itinerary only. */
+:root {
+  --ui-background: #F7F8F5;
+  --ui-surface: #FFFFFF;
+  --ui-text: #252824;
+  --ui-muted: #7A8078;
+  --ui-border: #E7EAE4;
+  --ui-accent: #7F927E;
+  --ui-accent-light: #EEF2EC;
+  --ui-selected: #F4F7F2;
+  --ui-selected-border: #B6C3AF;
+  --ui-autumn: #A88768;
+  --ui-accent-text: #50634F;
+  --ui-card-radius: 14px;
+  --washi-bg: var(--ui-background);
+  --washi-bg-secondary: var(--ui-accent-light);
+  --card-bg: var(--ui-surface);
+  --card-border: var(--ui-border);
+  --card-shadow: none;
+  --card-shadow-active: none;
+  --kyoto-dark: var(--ui-text);
+  --kyoto-charcoal: var(--ui-text);
+  --kyoto-muted: var(--ui-muted);
+  --maple-crimson: var(--ui-accent-text);
+  --maple-red-deep: var(--ui-accent-text);
+  --maple-vermilion: var(--ui-accent);
+  --amber-gold: var(--ui-autumn);
+}
+body { background-image: none; }
+.header-kyoto { background: var(--ui-surface); color: var(--ui-text); box-shadow: none; }
+.header-kyoto::before { content: none; }
+.header-title-group h1 { font-weight: 600; }
+.header-subtitle { color: var(--ui-muted); font-weight: 400; opacity: 1; }
+.trip-badge { background: var(--ui-accent-light); color: var(--ui-accent-text); border-color: var(--ui-border); backdrop-filter: none; }
+.header-actions .icon-btn-ghost { background: transparent; border-color: transparent; color: var(--ui-text); }
+.kyoto-card, .timeline-card { background: var(--ui-surface); border-color: var(--ui-border); box-shadow: none; }
+.kyoto-card:hover { box-shadow: none; }
+.card-title { font-weight: 600; color: var(--ui-text); }
+.bottom-nav {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.nav-item { color: var(--ui-muted); }
+.nav-item.active { color: var(--ui-accent-text); background: transparent; }
+.nav-item.active .nav-icon { transform: none; }
+.btn-primary { background: var(--ui-accent-light); color: var(--ui-accent-text); box-shadow: none; }
+.btn-secondary { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-text); }
+.btn-floating-add { background: var(--ui-surface); color: var(--ui-text); box-shadow: none; }
+.itinerary-outline-button { color: var(--ui-text); }
+#add-itinerary-modal-btn { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-text); box-shadow: none; }
+#tab-itinerary .day-btn { background: var(--ui-surface); border-color: var(--ui-border); box-shadow: none; font-weight: 500; }
+#tab-itinerary .day-btn.active { background: var(--ui-accent-light); color: var(--ui-accent-text); border-color: var(--ui-selected-border); box-shadow: none; }
+#tab-itinerary .day-btn.active .day-date-sub { color: var(--ui-accent-text); }
+#tab-itinerary .day-date-sub { font-weight: 400; }
+#tab-itinerary .chip-btn { background: transparent; border-color: var(--ui-border); font-weight: 400; }
+#tab-itinerary .chip-btn.active { background: var(--ui-accent-light); color: var(--ui-accent-text); border-color: var(--ui-selected-border); }
+#tab-itinerary .timeline-time { color: var(--ui-autumn); font-weight: 500; }
+#tab-itinerary .timeline-item::before { background: var(--ui-border); }
+#tab-itinerary .badge { background: var(--ui-accent-light); color: var(--ui-muted); font-weight: 400; }
+.itinerary-section-title { font-weight: 500; color: var(--ui-text); }
+.itinerary-place-title { font-weight: 600; color: var(--ui-text); }
+.itinerary-place-metadata, .itinerary-helper, .map-caption { font-weight: 400; color: var(--ui-muted); }
+/* Local overrides for the existing inline-styled itinerary import control. */
+#google-sheet-itinerary-control-container .btn-primary {
+  background: var(--ui-accent-light) !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+}
+@media (hover: hover) {
+  .nav-item:hover, .itinerary-outline-button:hover, #add-itinerary-modal-btn:hover { background: var(--ui-accent-light); }
+  .header-actions .icon-btn-ghost:hover { background: var(--ui-accent-light); }
+}
+@media (min-width: 1024px) {
+  #tab-itinerary .itinerary-layout { gap: 36px; }
+  #tab-itinerary .timeline-card { padding: 20px; border-radius: var(--ui-card-radius); }
+  #tab-itinerary .timeline-item { padding-bottom: 24px; }
+  #tab-itinerary .timeline-card.is-selected { border-color: var(--ui-selected-border); background: var(--ui-selected); }
+  #tab-itinerary .itinerary-map-pane.kyoto-card { background: transparent; border-color: transparent; box-shadow: none; padding: 0; }
+  #tab-itinerary #itinerary-map-frame { border: 1px solid var(--ui-border); border-radius: 12px; }
+}
+
+/* Phase 2A: SVG visuals only; existing control geometry remains untouched. */
+:root { --ui-icon-danger: #DC2626; --ui-icon-warning: #B7791F; }
+.ui-icon { width:18px; height:18px; vertical-align:-0.15em; pointer-events:none; fill:none; stroke:currentColor; stroke-width:1.75; }
+.ui-icon--muted { color:var(--ui-muted); }
+.ui-icon--active { color:var(--ui-accent); }
+.ui-icon--strong { color:var(--ui-accent-text); }
+.ui-icon--travel { color:var(--ui-autumn); }
+.ui-icon--danger { color:var(--ui-icon-danger); }
+.ui-icon--warning { color:var(--ui-icon-warning); }
+.ui-icon--inherit { color:inherit; }
+.nav-icon > .ui-icon, .icon-btn-ghost > .ui-icon { width:20px; height:20px; }
+.itinerary-outline-icon, .btn-floating-add > .ui-icon { width:22px; height:22px; }
+/* Phase 2A.1: scoped badge/action visuals; no grid, mobile control geometry or font changes. */
+#shopping-grid-container .shopping-category-badge { white-space: nowrap; flex-shrink: 0; }
+#add-itinerary-modal-btn, #add-shopping-modal-btn {
+  background: var(--ui-selected);
+  color: var(--ui-accent-text);
+  box-shadow: inset 0 0 0 1px var(--ui-selected-border);
+}
+#add-itinerary-modal-btn > .ui-icon, #add-shopping-modal-btn > .ui-icon { color: inherit; }
+@media (hover: hover) {
+  #add-itinerary-modal-btn:hover, #add-shopping-modal-btn:hover { background: var(--ui-accent-light); }
+}
+@media (min-width: 1024px) {
+  #tab-itinerary .itinerary-card-map-action { display: none; }
+  #tab-itinerary .itinerary-edit-button {
+    width: 44px;
+    padding: 0;
+    gap: 0;
+    color: var(--ui-muted);
+  }
+  #tab-itinerary .itinerary-edit-button > .ui-icon { width: 18px; height: 18px; }
+}
+@media (min-width: 1024px) and (hover: hover) {
+  #tab-itinerary .itinerary-edit-button:hover { color: var(--ui-accent-text); }
+}
+/* Phase 2A.1c: mobile layout only; desktop starts at the unchanged 1024px boundary. */
+@media (width < 1024px) {
+  #tab-flight .flight-schedule { flex-wrap: wrap; gap: 12px 8px; }
+  #tab-flight .flight-endpoint { flex: 0 0 calc((100% - 8px) / 2); min-width: 0; overflow-wrap: anywhere; }
+  #tab-flight .flight-time { white-space: nowrap; }
+  #tab-flight .flight-airline { order: 1; flex: 0 0 100%; min-width: 0; overflow-wrap: anywhere; }
+  /* Content floor: five 18px icons + four-character labels + 1px gaps, plus borders.
+     Keep the current width where it fits; cap expansion at 4px viewport gutters. */
+  .bottom-nav-container { width: calc(100% - 32px); }
+  .bottom-nav { padding-left: 0; padding-right: 0; }
+  .bottom-nav .nav-item { flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; padding-left: 0; padding-right: 0; gap: 2px; min-width: 0; min-height: 44px; }
+  .bottom-nav .nav-item > span:not(.nav-icon) { white-space: nowrap; font-size: 11px; line-height: 1.2; }
+  .bottom-nav .nav-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 18px; height: 18px; line-height: 1; }
+  .bottom-nav .nav-icon > .ui-icon { width: 18px; height: 18px; }
+  #tab-itinerary .timeline-item { flex-direction: column; gap: 6px; }
+  #tab-itinerary .timeline-item::before { display: none; }
+  #tab-itinerary .timeline-time { flex: none; min-width: 0; width: auto; text-align: left; padding-top: 0; font-size: 0.875rem; }
+  #tab-itinerary .timeline-card { flex: none; min-width: 0; width: 100%; }
+  #tab-itinerary .itinerary-place-title { min-width: 0; overflow-wrap: anywhere; }
+}
+@media (max-width: 340px) {
+  .bottom-nav .nav-item > span:not(.nav-icon) { font-size: 10.5px; }
+}
+/* Statistic defaults reproduce existing desktop presentation. */
+.statistic-summary-grid { grid-template-columns: repeat(3, 1fr); }
+.statistic-amount { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Note content is inserted without template indentation; no parsing or normalization. */
+.expense-note { display: flex; align-items: flex-start; gap: 6px; line-height: 1.6; }
+.expense-note > .ui-icon { flex-shrink: 0; }
+.expense-note-text { flex: 1; min-width: 0; white-space: pre-wrap; word-break: normal; overflow-wrap: break-word; }
+@media (width < 1024px) {
+  .statistic-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .statistic-summary-grid > .parsed-item { min-width: 0; }
+  .statistic-summary-grid > .parsed-item:last-child { grid-column: 1 / -1; }
+  .statistic-summary-grid .statistic-amount { white-space: nowrap; overflow: visible; text-overflow: clip; }
+  .statistic-summary-grid > .parsed-item:not(:last-child) .statistic-amount { font-size: clamp(0.8rem, calc(4.8vw - 0.16rem), 0.95rem); }
+  #shopping-grid-container .shopping-details { min-width: 0; }
+  #shopping-grid-container .shopping-location-header { flex-direction: column; align-items: stretch; gap: 4px; }
+  #shopping-grid-container .shopping-name-row { min-width: 0; width: 100%; }
+  #shopping-grid-container .shopping-name-row .shopping-title { flex: 1; min-width: 0; white-space: normal; word-break: normal; overflow-wrap: break-word; }
+  #shopping-grid-container .shopping-location-header > .shopping-category-badge { align-self: flex-end; }
+}
+@supports (text-wrap: balance) {
+  @media (width < 1024px) {
+    #shopping-grid-container .shopping-name-row .shopping-title { text-wrap: balance; }
+  }
+}
+
+/* Phase 2B-1A: font inheritance and shared semantic weights only. */
+button, input, select, textarea { font-family: var(--font-main); }
+.nav-item, .btn-primary, .btn-secondary { font-weight: 500; }
+
+/* Phase 2B-1B: shared presentation only; page layout and interactions stay intact. */
+:root {
+  --ui-bg: var(--ui-background);
+  --ui-control-radius: 12px;
+  --ui-heading-line-height: 1.4;
+  --ui-copy-line-height: 1.6;
+}
+.tab-section .kyoto-card:not(.itinerary-map-pane), .timeline-card, .shopping-card {
+  border-radius: var(--ui-card-radius);
+}
+.shopping-card { background: var(--ui-surface); border-color: var(--ui-border); box-shadow: none; }
+.card-title, .ui-card-title { color: var(--ui-text); font-weight: 600; line-height: var(--ui-heading-line-height); }
+.itinerary-section-title, .ui-section-title { color: var(--ui-text); font-weight: 500; line-height: var(--ui-heading-line-height); }
+.parsed-label, .text-muted, .ui-metadata { color: var(--ui-muted); font-weight: 400; }
+.ui-note { color: var(--ui-muted); font-weight: 400; line-height: var(--ui-copy-line-height); }
+.ui-amount { color: var(--ui-text); font-weight: 600; white-space: nowrap; }
+.badge, .badge-spot, .badge-meal, .badge-cafe, .badge-transport, .badge-hotel, .badge-shop {
+  background: var(--ui-surface);
+  color: var(--ui-muted);
+  font-weight: 400;
+  max-width: 100%;
+  box-shadow: inset 0 0 0 1px var(--ui-border);
+}
+.badge-sage { background: var(--ui-accent-light); color: var(--ui-accent-text); box-shadow: inset 0 0 0 1px var(--ui-selected-border); }
+.badge-autumn { background: var(--ui-background); color: var(--ui-autumn); }
+.chip-btn { background: var(--ui-surface); color: var(--ui-muted); border-color: var(--ui-border); font-weight: 400; }
+.chip-btn.active { background: var(--ui-accent-light); color: var(--ui-accent-text); border-color: var(--ui-selected-border); }
+.btn-primary { background: var(--ui-accent-light); color: var(--ui-accent-text); box-shadow: none; font-weight: 500; }
+.btn-secondary { background: var(--ui-surface); color: var(--ui-muted); border-color: var(--ui-border); box-shadow: none; font-weight: 500; }
+.btn-icon-sm, .icon-btn-ghost { color: var(--ui-muted); }
+.form-control { background: var(--ui-surface); color: var(--ui-text); border-color: var(--ui-border); border-radius: var(--ui-control-radius); font-weight: 400; }
+.form-control:focus { background: var(--ui-surface); border-color: var(--ui-selected-border); box-shadow: 0 0 0 2px var(--ui-accent-light); }
+.form-label { color: var(--ui-muted); font-weight: 500; }
+:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+@media (hover: hover) {
+  .chip-btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-icon-sm:hover { background: var(--ui-accent-light); color: var(--ui-accent-text); }
+}
+
+/* Accounting Visual Unification: presentation only; preserve responsive grids and handlers. */
+#tab-expense .accounting-section-title, #tab-expense .accounting-history-title { color: var(--ui-text); font-weight: 600; }
+#tab-expense .accounting-amount { color: var(--ui-accent-text); font-weight: 600; }
+#tab-expense .accounting-stat-cell { background: var(--ui-background); }
+#tab-expense .parsed-val { color: var(--ui-accent-text); font-weight: 600; }
+#tab-expense .nlp-banner-card { background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: var(--ui-card-radius); }
+#tab-expense .nlp-input-field { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-text); border-radius: var(--ui-control-radius); }
+#tab-expense .nlp-input-field::placeholder { color: var(--ui-muted); opacity: 1; }
+#tab-expense .nlp-input-field:focus { border-color: var(--ui-selected-border); box-shadow: 0 0 0 2px var(--ui-accent-light); }
+#tab-expense .nlp-submit-btn { background: var(--ui-accent-light); color: var(--ui-accent-text); }
+#tab-expense .nlp-submit-btn > .ui-icon { color: inherit; }
+#tab-expense .nlp-tag-sample { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-muted); overflow-wrap: break-word; max-width: 100%; }
+#tab-expense .nlp-tag-sample:active { background: var(--ui-accent-light); border-color: var(--ui-selected-border); color: var(--ui-accent-text); }
+#tab-expense .parsed-preview-box { background: var(--ui-surface); border: 1px solid var(--ui-selected-border); border-radius: var(--ui-card-radius); }
+.accounting-csv-action { background: var(--ui-selected); border: 1px solid var(--ui-selected-border); color: var(--ui-accent-text); box-shadow: none; font-weight: 500; }
+#modal-google-sheet-expense #form-google-sheet-expense > div:first-child { border-color: var(--ui-border); background: var(--ui-background); }
+#modal-google-sheet-expense .btn-primary > .ui-icon { color: var(--ui-accent-text); }
+@media (hover: hover) {
+  #tab-expense .nlp-tag-sample:hover { background: var(--ui-accent-light); border-color: var(--ui-selected-border); color: var(--ui-accent-text); }
+  #tab-expense .nlp-submit-btn:hover { background: var(--ui-selected); }
+  .accounting-csv-action:hover { background: var(--ui-accent-light); }
+}
+
+@media (width < 1024px) {
+  #modal-card-limits .accounting-card-toolbar { flex-wrap: wrap; }
+  #modal-card-limits .accounting-card-toolbar > .btn-primary { width: auto; }
+}
+
+/* Shopping summary and product-row presentation; original actions and images retained. */
+#shopping-grid-container .shopping-items-summary { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 4px; font-size: 0.72rem; color: var(--ui-muted); line-height: 1.6; }
+#shopping-grid-container .shopping-summary-item { display: inline-flex; align-items: baseline; gap: 4px; min-width: 0; max-width: 100%; }
+#shopping-grid-container .shopping-summary-bullet { flex-shrink: 0; }
+#shopping-grid-container .shopping-summary-name { min-width: 0; word-break: normal; overflow-wrap: break-word; }
+.subitem-card .shopping-details { min-width: 0; }
+.subitem-card .shopping-product-heading > .shopping-title { flex: 1; min-width: 0; word-break: normal; overflow-wrap: break-word; }
+.subitem-card .shopping-purchase-status { white-space: nowrap; flex-shrink: 0; }
+@media (width < 1024px) {
+  .subitem-card .shopping-details { padding: 0; }
+  .subitem-card .shopping-product-heading { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .subitem-card .shopping-product-heading > .shopping-title { width: 100%; }
+}
+
+/* Flight + Itinerary: semantic presentation, unchanged responsive layout. */
+#tab-flight .card-title, #tab-flight .flight-section-title { font-weight: 600; color: var(--ui-text); }
+#tab-flight .flight-time { font-size: 1.3rem; font-weight: 600; color: var(--ui-accent-text); white-space: nowrap; }
+#tab-flight .flight-airport { font-size: 0.85rem; font-weight: 500; color: var(--ui-text); word-break: normal; overflow-wrap: break-word; }
+#tab-flight .flight-airline { color: var(--ui-muted); }
+#tab-flight .flight-airline-name { font-size: 0.75rem; font-weight: 400; overflow-wrap: break-word; }
+#tab-flight .flight-number { font-size: 0.78rem; font-weight: 500; color: var(--ui-accent-text); }
+#tab-flight .flight-direction { color: var(--ui-autumn); }
+#tab-flight .hotel-name { font-weight: 600; color: var(--ui-text); min-width: 0; word-break: normal; overflow-wrap: break-word; }
+#tab-flight .hotel-actions { flex-shrink: 0; }
+#tab-flight .hotel-note { color: var(--ui-muted); background: var(--ui-background); font-weight: 400; line-height: 1.6; word-break: normal; overflow-wrap: break-word; }
+#hotel-list-container .parsed-item { background: var(--ui-background); min-width: 0; }
+#hotel-list-container .parsed-val { color: var(--ui-accent-text); font-weight: 500; overflow-wrap: break-word; }
+#tab-itinerary .itinerary-section-title { font-weight: 600; }
+#tab-itinerary .day-btn { font-weight: 600; color: var(--ui-muted); background: var(--ui-surface); border-color: var(--ui-border); box-shadow: none; }
+#tab-itinerary .day-btn.active { color: var(--ui-accent-text); background: var(--ui-accent-light); border-color: var(--ui-selected-border); }
+#tab-itinerary .timeline-time { font-weight: 500; }
+#tab-itinerary .badge { font-weight: 500; white-space: nowrap; }
+#tab-itinerary .itinerary-place-title { min-width: 0; word-break: normal; overflow-wrap: break-word; }
+#tab-itinerary .itinerary-place-metadata { word-break: normal; overflow-wrap: break-word; line-height: 1.6; }
+#tab-itinerary .itinerary-budget { color: var(--ui-accent-text); font-weight: 600; min-width: 0; overflow-wrap: break-word; }
+#tab-itinerary .itinerary-cost-detail { color: var(--ui-muted); font-weight: 400; line-height: 1.6; overflow-wrap: break-word; }
+#tab-itinerary .itinerary-shopping-reminder { gap: 8px; }
+#tab-itinerary .itinerary-shopping-reminder > span:first-child { min-width: 0; overflow-wrap: break-word; }
+#tab-itinerary .itinerary-shopping-reminder > span:last-child { flex-shrink: 0; white-space: nowrap; }
+@media (hover: hover) { #tab-itinerary .day-btn:hover { background: var(--ui-accent-light); color: var(--ui-accent-text); } }
+
+/* Packing + Shopping: scoped presentation; common clearance keeps current nav geometry. */
+:root { --ui-bottom-content-clearance: calc(44px + 16px + 16px + 24px); }
+#tab-packing .card-title, #tab-packing .packing-header, #tab-shopping .shopping-section-title { font-weight: 600; color: var(--ui-text); }
+#tab-packing .kyoto-card > .flex-between { flex-wrap: wrap; gap: 6px; }
+#tab-packing .packing-category-heading { min-width: 0; }
+#tab-packing .packing-category-heading > span:last-child { min-width: 0; word-break: normal; overflow-wrap: break-word; }
+#tab-packing .packing-header > div:last-child { flex-shrink: 0; }
+#tab-packing .packing-item-row { background: var(--ui-surface); border-color: var(--ui-border); box-shadow: none; }
+#tab-packing .packing-item-row.checked { background: var(--ui-selected); }
+#tab-packing .packing-inline-input { color: var(--ui-text); font-weight: 500; min-width: 0; }
+#tab-packing .packing-item-row.checked .packing-inline-input { color: var(--ui-muted); }
+#tab-packing .packing-inline-input:hover, #tab-packing .packing-inline-input:focus { background: var(--ui-accent-light); box-shadow: inset 0 0 0 1px var(--ui-selected-border); }
+#tab-packing .progress-bar-bg { background: var(--ui-accent-light); }
+#tab-packing .progress-bar-fill { background: var(--ui-accent); }
+#tab-packing .checkbox-custom, #modal-shopping-detail .checkbox-custom { border-color: var(--ui-selected-border); }
+#tab-packing .packing-item-row.checked .checkbox-custom, #modal-shopping-detail .checkbox-custom.checked { background: var(--ui-accent-light); border-color: var(--ui-accent); color: var(--ui-accent-text); }
+.ui-drag-grip { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ui-muted); }
+.ui-drag-grip > .ui-icon { width: 14px; height: 18px; }
+#shopping-grid-container .shopping-title, #modal-shopping-detail .shopping-title { color: var(--ui-text); font-weight: 600; }
+#shopping-grid-container .shopping-details { min-width: 0; }
+#shopping-grid-container .shopping-name-row { min-width: 0; }
+#shopping-grid-container .shopping-title { min-width: 0; word-break: normal; overflow-wrap: break-word; }
+#shopping-grid-container .shopping-category-badge, #modal-shopping-detail .shopping-purchase-status { font-weight: 500; white-space: nowrap; }
+#shopping-grid-container .shopping-items-summary { font-weight: 400; }
+#modal-shopping-detail .shopping-price { color: var(--ui-accent-text); font-weight: 600; }
+#modal-shopping-detail .modal-header > div:first-child { min-width: 0; }
+#modal-shopping-detail .modal-header > div:first-child > div:first-child { flex-wrap: wrap; }
+#detail-location-name, #detail-location-note { min-width: 0; word-break: normal; overflow-wrap: break-word; }
+#modal-shopping .modal-title, #modal-shopping-detail .modal-title, #modal-add-item-to-loc .modal-title, #modal-edit-subitem .modal-title, #modal-packing-item .modal-title, #modal-packing-cat .modal-title { font-weight: 600; color: var(--ui-text); }
+#tab-packing .packing-category.drag-over, #tab-packing .packing-category.cat-drop-target, #shopping-grid-container .shopping-card.shop-drop-target { background: var(--ui-accent-light); border-color: var(--ui-selected-border); }
+#tab-packing .packing-category.dragging-cat, #tab-packing .packing-item-row.dragging, #shopping-grid-container .shopping-card.dragging-shop { border-color: var(--ui-selected-border); }
+#tab-packing .btn-secondary, #tab-shopping .chip-btn { font-weight: 500; }
+#packing-checklist-container:empty::before { content: "尚無行李分類，點選「新增分類」開始整理。"; display: block; padding: 20px; color: var(--ui-muted); font-weight: 400; line-height: 1.6; }
+
+/* Final consistency: auxiliary controls only; layout and accepted page styles retained. */
+.modal-title { color: var(--ui-text); }
+.modal-sheet { border-color: var(--ui-border); box-shadow: none; }
+.calendar-box { border-color: var(--ui-border); }
+.calendar-header { color: var(--ui-text); font-weight: 600; }
+.calendar-weekdays { color: var(--ui-muted); font-weight: 400; }
+.calendar-nav-btn { color: var(--ui-muted); background: var(--ui-surface); font-weight: 500; }
+.cal-day { color: var(--ui-text); font-weight: 500; }
+.cal-day.disabled { color: var(--ui-muted); opacity: 0.5; }
+.cal-day:not(.empty):not(.disabled):hover { background: var(--ui-accent-light); }
+.lightbox-caption { font-weight: 500; }
+
+/* Drag-only feedback: no layout-changing border widths or scale animation. */
+.drag-sort-ghost { position: fixed; left: 0; top: 0; z-index: 9999; pointer-events: none; opacity: 0.88; margin: 0 !important; transition: none !important; will-change: transform; box-shadow: none; }
+.packing-category.dragging-cat, .packing-item-row.dragging, .shopping-card.dragging-shop { transition: none; transform: none; border-width: 1px; border-style: solid; opacity: 0.45; user-select: none; }
+.packing-category.dragging-cat { border-width: 2px; }
+.packing-category.drag-over, .packing-category.cat-drop-target, .shopping-card.shop-drop-target { transition: none; transform: none; border-top-width: 1px; outline: 2px solid var(--ui-selected-border); outline-offset: -2px; }
+.packing-category.drag-over, .packing-category.cat-drop-target { border-top-width: 2px; }
+.drag-sort-ghost.dragging-cat, .drag-sort-ghost.dragging, .drag-sort-ghost.dragging-shop { opacity: 0.88; }
+
+/* Packing insertion marker shares the exact hovered-item boundary used on drop. */
+#tab-packing .packing-insertion-target { position: relative; transition: none; }
+#tab-packing .packing-insert-before::before, #tab-packing .packing-insert-after::after { content: ''; position: absolute; left: 0; right: 0; height: 2px; background: var(--ui-selected-border); pointer-events: none; }
+#tab-packing .packing-insert-before::before { top: -5px; }
+#tab-packing .packing-insert-after::after { bottom: -5px; }
+
+/* Packing contextual add belongs to the preceding category, outside item indexes. */
+#tab-packing .packing-add-item { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 12px; margin-top: 2px; background: transparent; border: 1px solid var(--ui-border); border-radius: var(--ui-control-radius); color: var(--ui-muted); font-family: inherit; font-size: 0.8rem; font-weight: 500; cursor: pointer; }
+#tab-packing .packing-add-item > .ui-icon { width: 18px; height: 18px; }
+.packing-context-category { margin: 0; color: var(--ui-accent-text); font-weight: 500; overflow-wrap: break-word; }
+#modal-packing-item .packing-item-form-actions { display: flex; gap: 8px; margin-top: 10px; }
+#modal-packing-item .packing-item-form-actions > button { flex: 1; }
+@media (hover: hover) { #tab-packing .packing-add-item:hover { background: var(--ui-accent-light); color: var(--ui-accent-text); border-color: var(--ui-selected-border); } }
+
+/* Inline packing add is not a sortable item. */
+#tab-packing .packing-inline-add-row { margin-bottom: 8px; padding: 12px 14px; background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: var(--radius-md); scroll-margin-bottom: calc(var(--ui-bottom-content-clearance) + env(safe-area-inset-bottom, 0px)); }
+#tab-packing .packing-inline-add-row:focus-within { border-color: var(--ui-selected-border); }
+#tab-packing .packing-inline-add-input { display: block; box-sizing: border-box; width: 100%; min-width: 0; border: 0; outline: none; background: transparent; color: var(--ui-text); font-family: inherit; font-size: 16px; font-weight: 400; }
+#tab-packing .packing-inline-add-input::placeholder { color: var(--ui-muted); }
+
+#modal-shopping .form-control { width: 100%; box-sizing: border-box; min-width: 0; }
+#modal-shopping .shopping-location-category-row > .form-group { min-width: 0; }
+@media (max-width: 1023px) { #modal-shopping .shopping-location-category-row { flex-direction: column; } }
+
+/* One itinerary form: separate desktop header, scroll body and action footer. */
+.itinerary-editor-body { display: contents; }
+@media (min-width: 1024px) {
+  #tab-itinerary .itinerary-map-pane--editing > :not(#itinerary-edit-panel-host) {
+    display: none;
+  }
+
+  #tab-itinerary .itinerary-edit-panel-host:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  #tab-itinerary .itinerary-edit-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    height: min(760px, calc(100dvh - 24px - var(--ui-bottom-content-clearance) - env(safe-area-inset-bottom, 0px)));
+    min-height: 0;
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  #tab-itinerary .itinerary-edit-panel .modal-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    flex: 0 0 auto;
+    position: static;
+    margin: 0;
+    padding: 16px 20px 12px;
+    background: var(--ui-surface);
+    border-bottom: 1px solid var(--ui-border);
+    z-index: 1;
+  }
+
+  #tab-itinerary .itinerary-edit-panel form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  #tab-itinerary .itinerary-edit-panel .itinerary-editor-body {
+    display: block;
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    padding: 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  #tab-itinerary .itinerary-edit-panel .form-control {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  #tab-itinerary .itinerary-edit-panel #it-cost-rows-container {
+    container-type: inline-size;
+  }
+
+  #tab-itinerary .itinerary-edit-panel .it-cost-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 96px 32px;
+  }
+
+  #tab-itinerary .itinerary-edit-panel .it-cost-name,
+  #tab-itinerary .itinerary-edit-panel .it-cost-amount {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  #tab-itinerary .itinerary-edit-panel .it-cost-currency {
+    grid-column: 2;
+    width: 100%;
+  }
+
+  @container (min-width: 660px) {
+    #tab-itinerary .itinerary-edit-panel .it-cost-row {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 96px 32px;
+    }
+    #tab-itinerary .itinerary-edit-panel .it-cost-name,
+    #tab-itinerary .itinerary-edit-panel .it-cost-amount,
+    #tab-itinerary .itinerary-edit-panel .it-cost-currency {
+      grid-column: auto;
+    }
+  }
+
+  #tab-itinerary .itinerary-editor-actions {
+    display: flex;
+    gap: 8px;
+    flex: 0 0 auto;
+    position: static;
+    padding: 12px 20px;
+    border-top: 1px solid var(--ui-border);
+    background: var(--ui-surface);
+  }
+
+  #tab-itinerary .itinerary-editor-actions > button {
+    flex: 1;
+  }
+
+  #tab-itinerary .itinerary-edit-panel .modal-header .close-modal {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    margin-left: auto;
+  }
+
+  #tab-itinerary .itinerary-editor-context {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 4px 32px 0 0;
+    color: var(--ui-muted);
+    font-size: 0.78rem;
+    font-weight: 400;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 1023px) {
+  #modal-itinerary .modal-sheet {
+    width: calc(100% - 32px);
+    max-width: 480px;
+    max-height: 88dvh;
+    overflow-y: auto;
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  #shopping-grid-container .shopping-location-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+    position: relative;
+  }
+
+  #shopping-grid-container .shopping-name-row {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  #shopping-grid-container .shopping-name-row .shopping-title {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+  }
+
+  #shopping-grid-container .shopping-location-header > .shopping-category-badge {
+    flex: 0 0 auto;
+    padding-left: 6px;
+    padding-right: 6px;
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+}
+
+/* Phase 5A Batch A: existing actions, no mobile positioning changes. */
+.accounting-page-actions { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.accounting-add-button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 500; color: var(--ui-accent-text); border-color: var(--ui-selected-border); }
+.accounting-add-button > .ui-icon { color: inherit; }
+@media (min-width: 1024px) {
+  #tab-itinerary:has(.itinerary-map-pane--editing) #add-itinerary-modal-btn { display: none; }
+}
+
+/* Phase 5A Batch B: mobile editor boundaries and detail-only reorder controls. */
+#modal-shopping-detail .subitem-reorder-controls { display: none; }
+@media (max-width: 1023px) {
+  #modal-itinerary .modal-sheet { display: flex; flex-direction: column; height: min(760px, 88dvh); padding: 0; overflow: hidden; }
+  #modal-itinerary .modal-header { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: start; flex: 0 0 auto; margin: 0; padding: 16px 20px; border-bottom: 1px solid var(--ui-border); }
+  #modal-itinerary .modal-title { grid-column: 1; min-width: 0; }
+  #modal-itinerary .itinerary-editor-context { grid-column: 1; grid-row: 2; margin-top: 8px; font-size: 0.78rem; color: var(--ui-muted); overflow-wrap: break-word; }
+  #modal-itinerary #itinerary-editor-close { grid-column: 2; grid-row: 1 / span 2; width: 36px; min-width: 36px; }
+  #modal-itinerary form { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; }
+  #modal-itinerary .itinerary-editor-body { display: block; flex: 1 1 0; min-height: 0; min-width: 0; padding: 20px; overflow-y: auto; overscroll-behavior: contain; }
+  #modal-itinerary .itinerary-editor-actions { display: flex; flex: 0 0 auto; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--ui-border); }
+  #modal-itinerary .itinerary-editor-actions > button { flex: 1; min-width: 0; }
+  #modal-shopping-detail .subitem-reorder-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  #modal-shopping-detail .subitem-reorder-controls > button { min-height: 44px; padding: 4px 10px; font-size: 0.75rem; white-space: nowrap; color: var(--ui-accent-text); }
+  #modal-shopping-detail .subitem-reorder-controls > button:disabled { opacity: 0.45; cursor: default; }
+}
