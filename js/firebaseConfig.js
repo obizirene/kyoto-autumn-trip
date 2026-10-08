@@ -110,7 +110,7 @@ class FirebaseStorageManager {
     this.rtdbRef.off('value');
     const onValue = (snapshot) => {
       const cloudData = snapshot.val();
-      this.cloudBaseline = cloudData;
+      if (this.localWritesPending === 0) this.cloudBaseline = cloudData;
       this.cloudReady = true;
       if (cloudData && typeof cloudData === 'object' && onDataReceived &&
           this.localWritesPending === 0 && !this.conflictDetected) {
@@ -136,9 +136,9 @@ class FirebaseStorageManager {
       return Promise.resolve(false);
     }
     const requestedData = JSON.parse(JSON.stringify(data));
-    const expected = JSON.stringify(this.cloudBaseline);
     this.localWritesPending += 1;
     const perform = async () => {
+      const expected = JSON.stringify(this.cloudBaseline);
       try {
         const result = await this.rtdbRef.transaction(
           (current) => JSON.stringify(current) === expected ? requestedData : undefined,
