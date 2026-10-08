@@ -1650,3 +1650,23 @@ button, input, select, textarea { font-family: var(--font-main); }
   #modal-shopping-detail .subitem-reorder-controls > button { min-height: 44px; padding: 4px 10px; font-size: 0.75rem; white-space: nowrap; color: var(--ui-accent-text); }
   #modal-shopping-detail .subitem-reorder-controls > button:disabled { opacity: 0.45; cursor: default; }
 }
+
+/* Shopping FAB: solid hit target matching the itinerary add action.
+   Keep it above shopping cards so taps cannot reach underlying delete buttons. */
+#tab-shopping #add-shopping-modal-btn {
+  background-color: #FFFFFF;
+  background-image: none;
+  opacity: 1;
+  border: 1px solid var(--ui-selected-border, #b5c4b5);
+  border-radius: 10px;
+  color: var(--ui-accent-text);
+  box-shadow: none;
+  z-index: 150;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (hover: hover) {
+  #tab-shopping #add-shopping-modal-btn:hover { background-color: #FFFFFF; }
+}
