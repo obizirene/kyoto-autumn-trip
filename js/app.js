@@ -1739,8 +1739,17 @@ document.addEventListener('DOMContentLoaded', () => {
       parsedItinerary.forEach(item => { dayCounts[item.day] = (dayCounts[item.day] || 0) + 1; });
       const daySummary = Object.keys(dayCounts).sort((a, b) => +a - +b).map(d => `Day ${d}: ${dayCounts[d]} 筆`).join(', ');
 
-      // 完整覆蓋：先清空再設定，避免舊資料殘留
+      // Verify day coverage before destructive import; a partial paste must not silently erase later days.
+      const importedDays = new Set(parsedItinerary.map(item => Number(item.day)));
+      const existingDays = new Set((tripData.itinerary || []).map(item => Number(item.day)));
+      const missingDays = [...existingDays].filter(day => !importedDays.has(day)).sort((a, b) => a - b);
+      const coverage = DAYS_LIST.map(d => `Day ${d.day}: ${dayCounts[d.day] || 0} 筆`).join('\n');
+      const warning = missingDays.length ? `\n\n⚠️ 原本有資料的 Day ${missingDays.join('、')} 不在這次匯入內容中，繼續將刪除那些天的行程。` : '';
+      if (!window.confirm(`準備匯入 ${parsedItinerary.length} 筆行程：\n\n${coverage}${warning}\n\n請確認 Day 3～5 有筆數；按「確定」才會覆蓋全部行程，否則按「取消」重新貼上完整表格。`)) {
+        return false;
+      }
       tripData.itinerary = parsedItinerary;
+      currentItineraryCategory = 'all';
       saveDataAndUpdate();
       if (textInput) textInput.value = '';
       window.closeModal('modal-google-sheet-itinerary');
