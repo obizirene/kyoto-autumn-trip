@@ -47,10 +47,10 @@
         <div class="header-actions">
           <button id="firebase-sync-btn" class="icon-btn-ghost" title="Firebase 雲端即時同步設定"><svg class="ui-icon ui-icon--active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 16a4 4 0 0 0-1-7.9A6 6 0 0 0 7 7a4.5 4.5 0 0 0 0 9Z"/></svg></button>
           <button id="export-data-modal-btn" class="icon-btn-ghost" title="匯出 CSV / JSON"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V3m-4 4 4-4 4 4M4 16v5h16v-5"/></svg></button>
-          <button id="import-data-modal-btn" class="icon-btn-ghost" title="匯入 CSV / JSON"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></svg></button>
         </div>
       </div>
       <div class="header-title-group">
+        <div id="firebase-sync-status" role="status" aria-live="polite" style="font-size:0.75rem; color:var(--ui-muted);">連線中</div>
         <h1>一起在日本追楓的日子</h1>
         <div class="header-subtitle">
           <span><svg class="ui-icon ui-icon--travel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg> 2026/11/20 ~ 11/29</span>
@@ -238,7 +238,7 @@
         <div id="shopping-grid-container" class="shopping-grid"></div>
 
         <!-- Floating Add Shopping Button -->
-        <button id="add-shopping-modal-btn" type="button" onclick="event.stopPropagation(); window.openAddShoppingModal()" class="btn-floating-add itinerary-outline-button" aria-label="新增購物地點" title="新增購物地點"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button id="add-shopping-modal-btn" type="button" class="btn-floating-add itinerary-outline-button" aria-label="新增購物地點" title="新增購物地點"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button>
       </section>
 
     </main>
@@ -295,51 +295,19 @@
           <button id="btn-export-combined-json" class="btn-primary">
             <svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 9 5v9l-9 5-9-5V8ZM3 8l9 5 9-5m-9 5v9M7 5l10 6"/></svg> 匯出「記帳 + 行程」組合備份 (JSON)
           </button>
+          <details>
+            <summary>還原 JSON 備份</summary>
+            <form id="form-restore-json">
+              <p>僅接受 JSON 備份。驗證後會列出覆蓋範圍，確認後才還原；建議先匯出目前資料。</p>
+              <label class="form-label" for="restore-json-file">選取 JSON 備份檔</label>
+              <input id="restore-json-file" class="form-control" type="file" accept=".json,application/json" />
+              <label class="form-label" for="restore-json-text">或貼上 JSON 備份內容</label>
+              <textarea id="restore-json-text" class="form-control" rows="4" placeholder="貼上 JSON 備份內容"></textarea>
+              <p id="restore-json-status" role="status" aria-live="polite"></p>
+              <button type="submit" class="btn-secondary">驗證並還原 JSON 備份</button>
+            </form>
+          </details>
         </div>
-      </div>
-    </div>
-
-    <!-- ==================== MODAL: IMPORT DATA (CSV & JSON) ==================== -->
-    <div id="modal-import-data" class="modal-overlay">
-      <div class="modal-sheet">
-        <div class="modal-header">
-          <div class="modal-title"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></svg> 匯入資料 (CSV / JSON)</div>
-          <button class="icon-btn-ghost close-modal" style="color:var(--ui-muted);" aria-label="關閉"><svg class="ui-icon ui-icon--muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
-        </div>
-        <form id="form-import-data">
-          <div style="font-size:0.78rem; color:var(--kyoto-muted); margin-bottom:12px; line-height:1.4;">
-            選取 <b>.csv 表格檔</b> (Excel/Google Sheet) 或 <b>.json 備份檔</b>，或直接貼上文字內容解析寫入！
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">選取 CSV / JSON 檔案</label>
-            <input type="file" id="import-file-input" class="form-control" accept=".csv,.json,text/csv,application/json" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">或 直接貼上 CSV / JSON 文字</label>
-            <textarea id="import-text-input" class="form-control" rows="4" placeholder="貼上 CSV 表格文字或 JSON 內容..."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">匯入目標與方式</label>
-            <select id="import-type-select" class="form-control">
-              <option value="auto">自動辨識 (CSV 或 JSON)</option>
-              <option value="expense">指定匯入至「記帳明細」</option>
-              <option value="itinerary">指定匯入至「分日行程」</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">寫入模式</label>
-            <select id="import-mode" class="form-control">
-              <option value="merge">合併模式 (保留現有資料，自動增補)</option>
-              <option value="replace">覆蓋模式 (全面替換舊資料)</option>
-            </select>
-          </div>
-
-          <button type="submit" class="btn-primary" style="margin-top:10px;">開始解析並匯入</button>
-        </form>
       </div>
     </div>
 
@@ -359,6 +327,11 @@
             <input type="text" id="fb-project-id" class="form-control" placeholder="https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app" value="https://kyoto-trip-2026-46dc0-default-rtdb.asia-southeast1.firebasedatabase.app" />
           </div>
           <div id="fb-status-message" style="font-size:0.78rem; font-weight:500; margin-bottom:8px;"></div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+            <button id="fb-retry-btn" type="button" class="btn-secondary">重新確認同步</button>
+            <button id="fb-backup-btn" type="button" class="btn-secondary">匯出本機 JSON</button>
+            <button id="fb-load-cloud-btn" type="button" class="btn-secondary" style="display:none;" hidden>已備份，改用雲端資料</button>
+          </div>
           <button type="submit" class="btn-primary">儲存並連結雲端資料庫</button>
         </form>
       </div>

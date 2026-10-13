@@ -22,12 +22,18 @@ window.StorageManager = {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
       // Async push to Firebase Firestore / Realtime DB if connected
-      if (window.FirebaseManager && window.FirebaseManager.isInitialized) {
+      if (window.FirebaseManager) {
         window.FirebaseManager.saveDataToCloud(data);
       }
       return true;
     } catch (e) {
       console.error('Failed to save data:', e);
+      if (window.FirebaseManager) {
+        window.FirebaseManager.writeBlocked = true;
+        window.FirebaseManager.pendingData = JSON.parse(JSON.stringify(data));
+        window.FirebaseManager.markPending();
+        window.FirebaseManager.setStatus('failed', '本機儲存失敗，請立即匯出 JSON 備份：' + e.message);
+      }
       return false;
     }
   },
@@ -155,13 +161,14 @@ window.StorageManager = {
   // --- IMPORT MODULES (CSV & JSON) ---
 
   importData: function(inputString, currentData, targetType = 'auto', mode = 'merge') {
-    const str = inputString.trim();
-    if (!str) throw new Error('輸入內容為空！');
+    const str = inputString;
+    const jsonText = inputString.trim();
+    if (!jsonText) throw new Error('輸入內容為空！');
 
     // Attempt 1: Try parsing as JSON first
-    if (str.startsWith('{') || str.startsWith('[')) {
+    if (jsonText.startsWith('{') || jsonText.startsWith('[')) {
       try {
-        const parsedJSON = JSON.parse(str);
+        const parsedJSON = JSON.parse(jsonText);
         return this.importJSONData(parsedJSON, currentData, mode);
       } catch (e) {
         console.warn('JSON parse failed, attempting CSV parse...', e);
@@ -241,6 +248,9 @@ window.StorageManager = {
 
     const headers = lines[0].map(h => h.trim().toLowerCase());
     const dataRows = lines.slice(1);
+    dataRows.forEach((row, index) => {
+      if (row.length !== headers.length) throw new Error(`第 ${index + 2} 列欄位數不符：預期 ${headers.length}，實際 ${row.length}。`);
+    });
 
     // Auto-detect type if set to auto
     let isExpense = targetType === 'expense';
@@ -282,14 +292,15 @@ window.StorageManager = {
       }
     } else if (isItinerary) {
       const parsedItinerary = dataRows.map((row, idx) => {
-        const dayNum = parseInt(row[0], 10) || 1;
+        if (!row[2] || !row[2].trim()) throw new Error(`第 ${idx + 2} 列缺少行程標題。`);
+        const dayNum = this.parseItineraryDay(row[0], idx + 2);
         const loc = row[4] || row[2] || '';
         return {
           id: 'it-csv-' + Date.now() + '-' + idx,
           day: dayNum,
           date: `Day ${dayNum}`,
           time: row[1] || '12:00',
-          title: row[2] || '行程',
+          title: row[2],
           category: row[3] || '景點',
           location: loc,
           costJPY: row[5] || '',
@@ -309,44 +320,74 @@ window.StorageManager = {
   },
 
   // Robust CSV Line/Cell Parser
+  parseItineraryDay: function(value, rowNumber) {
+    const match = String(value).trim().match(/^(?:day\s*|第\s*)?(10|[1-9])(?:\s*天)?$/i);
+    if (!match) throw new Error(`第 ${rowNumber} 列 Day 無效：請填入 1～10。`);
+    return Number(match[1]);
+  },
+
   parseCSVTextToMatrix: function(csvText) {
     // Remove BOM if present
     let text = csvText.replace(/^\uFEFF/, '');
+    // Detect from the header only; tabs inside quoted notes are not delimiters.
+    let headerQuoted = false, commas = 0, tabs = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (char === '"') {
+        if (headerQuoted && text[i + 1] === '"') i++;
+        else headerQuoted = !headerQuoted;
+      } else if (!headerQuoted) {
+        if (char === '\r' || char === '\n') break;
+        if (char === ',') commas++;
+        if (char === '\t') tabs++;
+      }
+    }
+    if (commas && tabs) throw new Error('標題列同時含逗號與 Tab 分隔，請使用一致的 CSV 或 TSV。');
+    const delimiter = tabs ? '\t' : ',';
     const rows = [];
     let currentRow = [];
     let currentCell = '';
     let inQuotes = false;
+    let closedQuote = false;
 
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
       const nextChar = text[i + 1];
 
-      if (char === '"') {
+      if (char === '"' && (inQuotes || currentCell === '' && !closedQuote)) {
         if (inQuotes && nextChar === '"') {
           currentCell += '"';
           i++; // Skip escaped quote
         } else {
-          inQuotes = !inQuotes;
+          if (inQuotes) { inQuotes = false; closedQuote = true; }
+          else inQuotes = true;
         }
-      } else if (char === ',' && !inQuotes) {
-        currentRow.push(currentCell.trim());
+      } else if (char === delimiter && !inQuotes) {
+        currentRow.push(currentCell);
         currentCell = '';
+        closedQuote = false;
       } else if ((char === '\r' || char === '\n') && !inQuotes) {
         if (char === '\r' && nextChar === '\n') i++; // Skip \n
-        currentRow.push(currentCell.trim());
-        if (currentRow.some(c => c.length > 0)) {
+        currentRow.push(currentCell);
+        if (currentRow.some(c => c.trim().length > 0)) {
           rows.push(currentRow);
         }
         currentRow = [];
         currentCell = '';
+        closedQuote = false;
       } else {
+        if (closedQuote && !inQuotes) {
+          if (char === ' ' || char === '\t') continue;
+          throw new Error('引號欄位結束後出現非分隔字元，請檢查原始表格。');
+        }
         currentCell += char;
       }
     }
 
-    if (currentCell || currentRow.length > 0) {
-      currentRow.push(currentCell.trim());
-      if (currentRow.some(c => c.length > 0)) {
+    if (inQuotes) throw new Error('欄位雙引號未封閉，請重新貼上完整表格。');
+    if (currentCell || currentRow.length > 0 || closedQuote) {
+      currentRow.push(currentCell);
+      if (currentRow.some(c => c.trim().length > 0)) {
         rows.push(currentRow);
       }
     }

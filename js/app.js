@@ -153,20 +153,38 @@ document.addEventListener('DOMContentLoaded', () => {
     initFirebaseSync();
   }
 
+  function updateFirebaseSyncStatus() {
+    const manager = window.FirebaseManager;
+    if (!manager) return;
+    const labels = { connecting: '連線中', synced: '已同步', pending: '待同步', failed: '同步失敗' };
+    const label = labels[manager.status] || '連線中';
+    const badge = document.getElementById('firebase-sync-status');
+    if (badge) {
+      badge.textContent = label;
+      badge.title = manager.lastError || label;
+      badge.style.color = manager.status === 'synced' ? 'var(--ui-accent-text)' : 'var(--ui-autumn)';
+    }
+    const message = document.getElementById('fb-status-message');
+    if (message) message.textContent = `${label}：${manager.lastError || (manager.status === 'synced' ? '已確認雲端資料。' : '尚未確認同步完成。')}`;
+    const resolve = document.getElementById('fb-load-cloud-btn');
+    if (resolve) {
+      resolve.hidden = !manager.writeBlocked;
+      resolve.style.display = manager.writeBlocked ? '' : 'none';
+      resolve.disabled = manager.writeInFlight || !manager.connected;
+    }
+  }
+
   function initFirebaseSync() {
     if (!window.FirebaseManager) return;
+    window.FirebaseManager.onStatusChange = updateFirebaseSyncStatus;
+    updateFirebaseSyncStatus();
     const initialized = window.FirebaseManager.isInitialized || window.FirebaseManager.init();
     if (!initialized) return;
-    window.FirebaseManager.onConflict = (message) => {
-      alert(message + '\n請先匯出 JSON 備份，再重新整理頁面以取得最新雲端資料。');
-    };
     window.FirebaseManager.subscribeRealtime((cloudData) => {
       if (!cloudData) return;
-      // Never replace a locally edited copy after a cloud write conflict.
-      if (window.FirebaseManager.lastError &&
-          window.FirebaseManager.lastError.includes('雲端資料已由其他裝置更新')) return;
+      // Cache without triggering another cloud write; only then replace live state.
+      localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(cloudData));
       tripData = cloudData;
-      localStorage.setItem(window.StorageManager.STORAGE_KEY, JSON.stringify(tripData));
       renderAllViews();
       if (currentLocationDetailId) renderLocationDetailModal(currentLocationDetailId);
     });
@@ -378,16 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedConfig) {
           document.getElementById('fb-project-id').value = savedConfig.databaseURL || savedConfig.projectId || '';
         }
-        const statusMsg = document.getElementById('fb-status-message');
-        if (statusMsg) {
-          if (window.FirebaseManager.isInitialized) {
-            statusMsg.style.color = '#10B981';
-            window.uiSetIconText(statusMsg, "check", "已成功連線至 Firebase Realtime DB / Firestore 雲端資料庫 (雙向即時同步中)", "active");
-          } else {
-            statusMsg.style.color = 'var(--amber-gold)';
-            window.uiSetIconText(statusMsg, "warning", "目前為離線本機模式。填寫 Project ID 即可啟用雙機即時同步！", "warning");
-          }
-        }
+        updateFirebaseSyncStatus();
         openModal('modal-firebase-config');
       });
     }
@@ -404,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
           };
           const success = window.FirebaseManager.init(config);
           if (success) {
-            alert('🔥 成功連結 Firebase 雲端資料庫！數據將即時同步！');
+            alert('已建立連線設定，正在確認雲端資料；請以同步狀態為準。');
             initFirebaseSync();
             closeModal('modal-firebase-config');
           } else {
@@ -413,6 +422,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+
+    document.getElementById('fb-retry-btn')?.addEventListener('click', () => {
+      const manager = window.FirebaseManager;
+      if (!manager.isInitialized) initFirebaseSync();
+      else manager.retryPendingSync();
+    });
+    document.getElementById('fb-backup-btn')?.addEventListener('click', () => {
+      window.StorageManager.exportFullJSON(tripData);
+    });
+    document.getElementById('fb-load-cloud-btn')?.addEventListener('click', async () => {
+      if (!window.confirm('請先使用「匯出本機 JSON」並確認備份已儲存。確定放棄目前本機待同步修改、改用最新雲端資料嗎？此操作不會寫入雲端。')) return;
+      const loaded = await window.FirebaseManager.discardPendingAndLoadCloud();
+      if (!loaded) alert('尚未載入雲端，本機待同步狀態保留；請查看同步訊息後再試。');
+    });
 
     // 1. Navigation Tab Switching
     tabButtons.forEach(btn => {
@@ -468,45 +491,63 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // 3. Import Data Modal & Form Handler (CSV & JSON)
-    const importModalBtn = document.getElementById('import-data-modal-btn');
-    if (importModalBtn) {
-      importModalBtn.addEventListener('click', () => {
-        document.getElementById('form-import-data').reset();
-        openModal('modal-import-data');
-      });
+    // JSON-only backup restore: validate before confirmation or live state changes.
+    function prepareJSONRestore(text) {
+      const data = JSON.parse(text.replace(/^\uFEFF/, ''));
+      const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+      if (!object(data)) throw new Error('備份必須是 JSON 物件。');
+      const labels = { itinerary: '行程', expenses: '記帳', shopping: '購物', packing: '行李', hotels: '住宿', cards: '信用卡', flightInfo: '航班與匯率' };
+      const full = Object.hasOwn(data, 'flightInfo');
+      const typeKeys = { kyoto_trip_expenses: ['expenses'], kyoto_trip_itinerary: ['itinerary'], kyoto_trip_expenses_itinerary: ['expenses','itinerary'] };
+      if (!full && data.type && !typeKeys[data.type]) throw new Error('不支援的備份類型。');
+      const keys = full ? Object.keys(data) : (typeKeys[data.type] || ['expenses','itinerary'].filter(key => Object.hasOwn(data,key)));
+      if (!full && (!keys.length || Object.keys(data).some(key => ![...keys,'type','exportDate'].includes(key)))) throw new Error('不是支援的行程／記帳備份；完整備份須包含 flightInfo。');
+      const array = (value, name) => {
+        if (!Array.isArray(value) || value.some(item => !object(item))) throw new Error(name + '必須是由資料物件組成的陣列。');
+      };
+      if (full) {
+        for (const key of ['expenses','itinerary','shopping','packing','hotels']) array(data[key],labels[key]);
+        if (!object(data.flightInfo) || !object(data.flightInfo.outbound) || !object(data.flightInfo.inbound)) throw new Error('航班備份結構不完整。');
+      }
+      for (const key of keys) if (key !== 'flightInfo' && Object.hasOwn(labels,key)) array(data[key],labels[key]);
+      for (const key of ['shopping','packing']) if (data[key]) {
+        for (const item of data[key]) {
+          if (key === 'packing' && typeof item.category !== 'string') throw new Error('行李分類名稱無效。');
+          if (key === 'shopping' && typeof item.location !== 'string') throw new Error('購物地點名稱無效。');
+          if (key === 'packing' || item.items !== undefined) array(item.items,labels[key]+'細項');
+        }
+      }
+      for (const item of data.itinerary || []) {
+        if (typeof item.title !== 'string' || !item.title.trim() || !Number.isInteger(Number(item.day)) || Number(item.day)<1 || Number(item.day)>10) throw new Error('行程需有標題及有效 Day（1～10）。');
+        if (item.costs !== undefined) array(item.costs,'行程費用');
+      }
+      for (const item of data.expenses || []) if (typeof item.title !== 'string' || !Number.isFinite(item.amount)) throw new Error('記帳需有標題及有效金額。');
+      return { data, summary: full ? '全部資料：'+keys.map(key => labels[key] || key).join('、')+'（備份未含的現有欄位也會移除）' : keys.map(key => labels[key]).join('、')+'；其他資料保留' };
     }
 
-    const importForm = document.getElementById('form-import-data');
-    if (importForm) {
-      importForm.addEventListener('submit', (e) => {
+    const restoreForm = document.getElementById('form-restore-json');
+    if (restoreForm) {
+      restoreForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const fileInput = document.getElementById('import-file-input');
-        const textInput = document.getElementById('import-text-input').value.trim();
-        const targetType = document.getElementById('import-type-select').value;
-        const mode = document.getElementById('import-mode').value;
-
-        const processContent = (str) => {
-          try {
-            tripData = window.StorageManager.importData(str, tripData, targetType, mode);
-            saveDataAndUpdate();
-            closeModal('modal-import-data');
-            alert('🎉 成功匯入資料！');
-          } catch (err) {
-            alert('❌ 匯入失敗：' + err.message);
+        const button = restoreForm.querySelector('button[type="submit"]');
+        const status = document.getElementById('restore-json-status');
+        if (button.disabled) return;
+        button.disabled = true;
+        try {
+          const file = document.getElementById('restore-json-file').files[0];
+          if (file && !/\.json$/i.test(file.name)) throw new Error('僅接受 .json 備份檔。');
+          const text = file ? await file.text() : document.getElementById('restore-json-text').value;
+          const prepared = prepareJSONRestore(text);
+          status.textContent = '將覆蓋：'+prepared.summary;
+          if (!window.confirm('將覆蓋：'+prepared.summary+'\n此操作會使用既有儲存與雲端同步流程。請先備份目前資料。確定還原？')) {
+            status.textContent = '已取消還原，原資料未變更。'; return;
           }
-        };
-
-        if (fileInput.files && fileInput.files[0]) {
-          const file = fileInput.files[0];
-          const reader = new FileReader();
-          reader.onload = (evt) => processContent(evt.target.result);
-          reader.readAsText(file);
-        } else if (textInput) {
-          processContent(textInput);
-        } else {
-          alert('請選取 CSV / JSON 檔案或貼上內容！');
-        }
+          const restored = window.StorageManager.importJSONData(prepared.data, tripData, 'replace');
+          tripData = restored;
+          saveDataAndUpdate();
+          status.textContent = '已還原；雲端同步結果請查看同步狀態。';
+        } catch (error) { status.textContent = '還原失敗：'+error.message; }
+        finally { button.disabled = false; }
       });
     }
 
@@ -1034,7 +1075,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const addShoppingBtn = document.getElementById('add-shopping-modal-btn');
   if (addShoppingBtn) {
-    addShoppingBtn.addEventListener('click', window.openAddShoppingModal);
+    addShoppingBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      window.openAddShoppingModal();
+    });
   }
 
   let uploadedShopImgBase64 = null;
@@ -1338,9 +1382,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e) { e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); }
 
     const textInput = document.getElementById('gs-expense-csv-text');
-    let directText = textInput ? textInput.value.trim() : '';
+    let directText = textInput ? textInput.value : '';
 
-    if (!directText) {
+    if (!directText.trim()) {
       alert('請先在 Google 試算表中選取記帳表格（含第1列標題），按 Ctrl+C，然後貼到文字框中！');
       return false;
     }
@@ -1351,29 +1395,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function parseCSVGrid(text) {
       if (!text) return [];
-      const isTabSeparated = text.includes('\t') || !text.includes(',');
-      const delimiter = isTabSeparated ? '\t' : ',';
-      const rows = [];
-      let currentRow = [], currentCell = '', inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i], nextChar = text[i + 1];
-        if (char === '"') {
-          if (inQuotes && nextChar === '"') { currentCell += '"'; i++; }
-          else { inQuotes = !inQuotes; }
-        } else if (char === delimiter && !inQuotes) {
-          currentRow.push(currentCell.trim()); currentCell = '';
-        } else if ((char === '\r' || char === '\n') && !inQuotes) {
-          if (char === '\r' && nextChar === '\n') i++;
-          currentRow.push(currentCell.trim());
-          if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
-          currentRow = []; currentCell = '';
-        } else { currentCell += char; }
-      }
-      if (currentCell || currentRow.length > 0) {
-        currentRow.push(currentCell.trim());
-        if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
-      }
-      return rows;
+      return window.StorageManager.parseCSVTextToMatrix(text);
     }
 
     const csvText = directText;
@@ -1385,13 +1407,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
       }
 
-      const headers = rows[0].map(h => h.toLowerCase().replace(/"/g, ''));
+      const headers = rows[0].map(h => h.trim().toLowerCase());
       const importTs = Date.now();
       const parsedExpenses = [];
 
       for (let i = 1; i < rows.length; i++) {
-        const row = rows[i].map(c => c.replace(/^"|"/g, ''));
+        const row = rows[i];
         if (!row.some(c => c)) continue;
+        if (row.length !== headers.length) throw new Error(`第 ${i + 1} 列欄位數不符：預期 ${headers.length}，實際 ${row.length}。`);
 
         let date = '2026-11-20', time = '', item = '', costJPY = 0, costTWD = 0, payer = '❤️', category = '飲食', card = '現金', note = '';
 
@@ -1622,9 +1645,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e) { e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); }
 
     const textInput = document.getElementById('gs-itinerary-csv-text');
-    let directText = textInput ? textInput.value.trim() : '';
+    let directText = textInput ? textInput.value : '';
 
-    if (!directText) {
+    if (!directText.trim()) {
       alert('請先在 Google 試算表中選取行程表格（含第1列標題），按 Ctrl+C，然後貼到文字框中！');
       return false;
     }
@@ -1634,29 +1657,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function parseCSVGrid(text) {
       if (!text) return [];
-      const isTabSeparated = text.includes('\t') || !text.includes(',');
-      const delimiter = isTabSeparated ? '\t' : ',';
-      const rows = [];
-      let currentRow = [], currentCell = '', inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i], nextChar = text[i + 1];
-        if (char === '"') {
-          if (inQuotes && nextChar === '"') { currentCell += '"'; i++; }
-          else { inQuotes = !inQuotes; }
-        } else if (char === delimiter && !inQuotes) {
-          currentRow.push(currentCell.trim()); currentCell = '';
-        } else if ((char === '\r' || char === '\n') && !inQuotes) {
-          if (char === '\r' && nextChar === '\n') i++;
-          currentRow.push(currentCell.trim());
-          if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
-          currentRow = []; currentCell = '';
-        } else { currentCell += char; }
-      }
-      if (currentCell || currentRow.length > 0) {
-        currentRow.push(currentCell.trim());
-        if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
-      }
-      return rows;
+      return window.StorageManager.parseCSVTextToMatrix(text);
     }
 
     function buildCandidateUrls(raw) {
@@ -1691,19 +1692,24 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('❌ 讀取到的行程內容為空！請確認選取了包含第一列標題的表格！');
         return false;
       }
-      const headers = rows[0].map(h => h.toLowerCase().replace(/"/g, ''));
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      if (!headers.some(h => h.includes('day') || h.includes('天數') || h.includes('第幾天')) ||
+          !headers.some(h => h.includes('title') || h.includes('標題') || h.includes('名稱'))) {
+        throw new Error('標題列必須包含 Day／天數及行程標題。');
+      }
       const importTs = Date.now();
       const parsedItinerary = [];
 
       for (let i = 1; i < rows.length; i++) {
-        const row = rows[i].map(c => c.replace(/^"|"$/g, ''));
+        const row = rows[i];
+        if (row.length !== headers.length) throw new Error(`第 ${i + 1} 列欄位數不符：預期 ${headers.length}，實際 ${row.length}。`);
         if (!row.some(c => c)) continue;
         let day = 1, timeStr = '', title = '', category = '景點', location = '', costJPY = '', note = '', mapsUrl = '';
 
         row.forEach((val, idx) => {
           const h = headers[idx] || '', v = (val || '').trim();
-          if (h.includes('day') || h.includes('天數')) {
-            day = Math.min(Math.max(parseInt(v.replace(/[^0-9]/g, '')) || 1, 1), 10);
+          if (h.includes('day') || h.includes('天數') || h.includes('第幾天')) {
+            day = window.StorageManager.parseItineraryDay(v, i + 1);
           } else if (h.includes('time') || h.includes('時間')) {
             timeStr = v;
           } else if (h.includes('title') || h.includes('標題') || h.includes('行程標題') || h.includes('名稱')) {
@@ -1718,15 +1724,15 @@ document.addEventListener('DOMContentLoaded', () => {
           } else if (h.includes('location') || h.includes('地點')) {
             location = v;
           } else if (h.includes('cost') || h.includes('jpy') || h.includes('預算') || h.includes('日圓')) {
-            costJPY = v;
+            costJPY = val;
           } else if (h.includes('note') || h.includes('備忘') || h.includes('說明')) {
-            note = v;
+            note = val;
           } else if (h.includes('map') || h.includes('網址')) {
             mapsUrl = v;
           }
         });
 
-        if (!title) continue;
+        if (!title) throw new Error(`第 ${i + 1} 列缺少行程標題。`);
         parsedItinerary.push({ id: 'it-gs-' + importTs + '-' + i, day, time: timeStr || '09:00', title, category, location: location || title, costJPY, note, mapsUrl });
       }
 

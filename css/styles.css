@@ -1651,9 +1651,11 @@ button, input, select, textarea { font-family: var(--font-main); }
   #modal-shopping-detail .subitem-reorder-controls > button:disabled { opacity: 0.45; cursor: default; }
 }
 
-/* Shopping FAB: solid hit target matching the itinerary add action.
-   Keep it above shopping cards so taps cannot reach underlying delete buttons. */
+/* Match only the itinerary/shopping add controls; keep their existing positioning. */
+#tab-itinerary #add-itinerary-modal-btn,
 #tab-shopping #add-shopping-modal-btn {
+  width: 52px;
+  height: 52px;
   background-color: #FFFFFF;
   background-image: none;
   opacity: 1;
@@ -1661,6 +1663,9 @@ button, input, select, textarea { font-family: var(--font-main); }
   border-radius: 10px;
   color: var(--ui-accent-text);
   box-shadow: none;
+}
+/* Keep the shopping hit target above its card delete actions. */
+#tab-shopping #add-shopping-modal-btn {
   z-index: 150;
   pointer-events: auto;
   touch-action: manipulation;
@@ -1668,5 +1673,6 @@ button, input, select, textarea { font-family: var(--font-main); }
   backdrop-filter: none;
 }
 @media (hover: hover) {
+  #tab-itinerary #add-itinerary-modal-btn:hover,
   #tab-shopping #add-shopping-modal-btn:hover { background-color: #FFFFFF; }
 }
